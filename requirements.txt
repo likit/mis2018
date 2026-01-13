@@ -139,7 +139,7 @@ tzlocal==5.0.1
 uharfbuzz==0.37.3
 uritemplate==3.0.1
 uritools==4.0.1
-urllib3==1.26.19
+urllib3==2.6.3
 validators==0.20.0
 WeasyPrint==0.42
 webencodings==0.5.1
