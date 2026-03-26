@@ -811,9 +811,24 @@ class StaffSeminarPreRegister(db.Model):
                         (c, c) for c in ['ปกติ', 'อิสลาม', 'มังสวิรัติ']]})
 
 
+class StaffSeminarBatch(db.Model):
+    __tablename__ = 'staff_seminar_batches'
+    id = db.Column('id', db.Integer(), primary_key=True, autoincrement=True)
+    seminar_id = db.Column('seminar_id', db.ForeignKey('staff_seminar.id'), nullable=False)
+    seminar = db.relationship('StaffSeminar', backref=db.backref('batches', lazy='dynamic'))
+    created_by_id = db.Column('created_by_id', db.ForeignKey('staff_account.id'), nullable=False)
+    created_by = db.relationship('StaffAccount', foreign_keys=[created_by_id])
+    created_at = db.Column('created_at', db.DateTime(timezone=True), default=datetime.now())
+    note = db.Column('note', db.String(), nullable=True)
+
+
 class StaffSeminarAttend(db.Model):
     __tablename__ = 'staff_seminar_attends'
     id = db.Column('id', db.Integer(), primary_key=True, autoincrement=True)
+    batch_id = db.Column('batch_id', db.ForeignKey('staff_seminar_batches.id'), nullable=True)
+    batch = db.relationship('StaffSeminarBatch', backref=db.backref('attends', lazy='dynamic'))
+    created_by_id = db.Column('created_by_id', db.ForeignKey('staff_account.id'), nullable=True)
+    created_by = db.relationship('StaffAccount', foreign_keys=[created_by_id])
     seminar_id = db.Column('seminar_id', db.ForeignKey('staff_seminar.id'))
     start_datetime = db.Column('start_date', db.DateTime(timezone=True), info={'label': u'วันเริ่มต้น'})
     end_datetime = db.Column('end_date', db.DateTime(timezone=True), info={'label': u'วันสิ้นสุด'})

@@ -1565,6 +1565,8 @@ def send_evaluation_comment(pa_id):
 def all_pa_score():
     rounds = PARound.query.order_by(PARound.id.desc()).all()
     round_id = request.args.get('roundid', type=int)
+    if round_id is None and rounds:
+        round_id = rounds[0].id
     if round_id is None:
         all_pa = PAAgreement.query.filter_by(head_committee_staff_account=current_user).all()
     else:

@@ -943,7 +943,7 @@ def edit_record(record_id):
         if not record.labno:
             labno = request.form.get('service_code', '')
             if len(labno) != 10 or not labno.isdigit():
-                flash(u'กรุณาระบุหมายเลข lab number ให้ถูกต้องหรือแสกนบาร์โค้ด', 'warning')
+                flash(u'กรุณาระบุหมายเลข lab number ให้ถูกต้องหรือสแกนบาร์โค้ด', 'warning')
                 return redirect(request.referrer)
             else:
                 existing_rec = ComHealthRecord.query.filter_by(labno=labno).first()
