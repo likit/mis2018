@@ -2155,16 +2155,38 @@ def edit_customer_data(customer_id, service_id):
     return render_template('comhealth/edit_customer_data.html', form=form, customer=customer)
 
 
+@comhealth.route('/services/<int:service_id>/export_record_excel')
+@login_required
+def export_csv_page(service_id):
+    service = ComHealthService.query.get(service_id)
+    return render_template('comhealth/export_record_excel.html',
+                           service_id=service_id,
+                           service=service)
+
+
+
 # TODO: export the price of tests
 
-@comhealth.route('/services/<int:service_id>/to-csv')
+@comhealth.route('/services/<int:service_id>/to-csv', methods=['POST'])
 @login_required
 def export_csv(service_id):
     # TODO: add employment types (number)
     # TODO: add organization + dept + unit
     service = ComHealthService.query.get(service_id)
+    export_date = request.form.get('export_date', '').strip()
+    selected_date = None
+    if export_date:
+        try:
+            selected_date = datetime.strptime(export_date, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = None
     rows = []
     for record in service.records:
+        if selected_date:
+            if not record.checkin_datetime:
+                continue
+            if record.checkin_datetime.date() != selected_date:
+                continue
         if not record.labno:
             continue
         tests = ','.join([item.test.code for item in record.ordered_tests])
