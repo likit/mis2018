@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 
 import pandas as pd
 import requests
+import pytz
 from bahttext import bahttext
 from flask import (render_template, flash, redirect,
                    url_for, session, request, send_file,
@@ -2180,12 +2181,20 @@ def export_csv(service_id):
             selected_date = datetime.strptime(export_date, '%Y-%m-%d').date()
         except ValueError:
             selected_date = None
+    def _to_bangkok(dt):
+        if not dt:
+            return None
+        if dt.tzinfo is None:
+            dt = pytz.utc.localize(dt)
+        return dt.astimezone(bangkok)
+
     rows = []
     for record in service.records:
+        local_checkin = _to_bangkok(record.checkin_datetime)
         if selected_date:
-            if not record.checkin_datetime:
+            if not local_checkin:
                 continue
-            if record.checkin_datetime.date() != selected_date:
+            if local_checkin.date() != selected_date:
                 continue
         if not record.labno:
             continue
@@ -2214,7 +2223,9 @@ def export_csv(service_id):
                      'note_to_lab': u'{}'.format(record.comment),
                      'employment_note': u'{}'.format(record.note),
                      'finance_contact': u'{}'.format(reason),
-                     'checkin_datetime': u'{}'.format(record.checkin_datetime)})
+                     'checkin_datetime': u'{}'.format(
+                         local_checkin.strftime('%Y-%m-%d %H:%M:%S') if local_checkin else ''
+                     )})
     if rows:
         pd.DataFrame(rows).to_excel('export.xlsx',
                                     header=True,
