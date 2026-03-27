@@ -458,17 +458,18 @@ def room_reserve(room_id):
     if form.validate_on_submit():
         new_event = RoomEvent()
         if form.start.data:
+            start = arrow.get(form.start.data, 'Asia/Bangkok')
             startdatetime = arrow.get(form.start.data, 'Asia/Bangkok').datetime
-            hour = int(form.hour.data)
-            enddatetime = arrow.get(form.start.data, 'Asia/Bangkok').shift(hours=hour).datetime
         else:
+            start = None
             startdatetime = None
-            hour = None
+
+        if form.end.data:
+            end = arrow.get(form.end.data, 'Asia/Bangkok')
+            enddatetime = arrow.get(form.end.data, 'Asia/Bangkok').datetime
+        else:
+            end = None
             enddatetime = None
-        # if form.end.data:
-        #     enddatetime = arrow.get(form.end.data, 'Asia/Bangkok').datetime
-        # else:
-        #     enddatetime = None
 
         if room_id and startdatetime and enddatetime:
             if get_overlaps(room_id, startdatetime, enddatetime):
@@ -501,18 +502,20 @@ def room_reserve(room_id):
             if form.booking.data and form.repeat_end.data:
                 db.session.commit()
                 day = 7 if form.booking.data == 'ทุกสัปดาห์' else 1
-                current_date = arrow.get(form.start.data, 'Asia/Bangkok').shift(days=day)
-                while current_date.date() <= repeat_end:
+                current_start = start.shift(days=day)
+                current_end = end.shift(days=day)
+                while (current_start.date() <= repeat_end and current_end.date() <= repeat_end):
                     # if calendar.weekday(current_date.year, current_date.month, current_date.day) < 5:
-                    current_startdatetime = current_date.datetime
-                    current_enddatetime = current_date.shift(hours=hour).datetime
+                    current_startdatetime = current_start.datetime
+                    current_enddatetime = current_end.datetime
                     event_overlaps = get_overlaps(room_id, current_startdatetime, current_enddatetime)
                     if not event_overlaps:
                         create_event(current_startdatetime, current_enddatetime, repeat_end, new_event.id, room_id, form)
-                    current_date = current_date.shift(days=day)
+                    current_start = current_start.shift(days=day)
+                    current_end = current_end.shift(days=day)
+
             else:
                 db.session.commit()
-            # TODO: alert by Line for the same-day booking
 
             if new_event.secondary:
                 event_times = ', '.join(
