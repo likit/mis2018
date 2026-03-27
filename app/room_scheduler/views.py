@@ -431,7 +431,7 @@ def edit_detail(event_id):
                 f"{arrow.get(new_event.end, 'Asia/Bangkok').datetime.astimezone(localtz).strftime('%d/%m/%Y %H:%M')}"
                 for new_event in new_events
             )
-            participant_emails = [f'{account.email}@mahidol.ac.th' for new_event in new_events for account in new_event.participants]
+            participant_emails = [f'{account.email}@mahidol.ac.th' for account in new_events[0].participants]
             msg = (f'{new_events[0].creator.fullname} ได้จองห้อง {new_events[0].room.number} สำหรับ {new_events[0].title} '
                    f'เวลา {new_event_times}.'
                    f'มีความต้องการเพิ่มเติมคือ {new_events[0].note}'
@@ -443,14 +443,15 @@ def edit_detail(event_id):
             message += f'\n\nขอความอนุเคราะห์เข้าร่วมในวันและเวลาดังกล่าว'
             if not current_app.debug:
                 if new_events[0].note:
-                        try:
-                            line_bot_api.push_message(to=new_events[0].room.coordinator.line_id, messages=TextSendMessage(text=msg))
-                        except LineBotApiError:
-                            pass
+                    for coord in new_events[0].room.coordinators:
+                            try:
+                                line_bot_api.push_message(to=coord.line_id, messages=TextSendMessage(text=msg))
+                            except LineBotApiError:
+                                pass
                 send_mail(participant_emails, title, message, attachments=_build_room_event_attachment(new_events[0]))
             else:
-                print(msg, [new_event.room.coordinator for new_event in new_events], new_events[0].note)
-                print(message)
+                print(msg, [coord.line_id for coord in new_events[0].room.coordinators], new_events[0].note)
+                print(message, participant_emails)
 
 
         flash(u'อัพเดตรายการเรียบร้อย', 'success')
