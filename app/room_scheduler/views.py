@@ -330,11 +330,13 @@ def approve_event(event_id):
 @room.route('/events/edit/<int:event_id>', methods=['POST', 'GET'])
 @login_required
 def edit_detail(event_id):
+    new_events = []
     event = RoomEvent.query.get(event_id)
     master_id = event.master_id or event.id
     old_booking = event.booking
-    old_repeat_end = arrow.get(event.repeat_end, 'Asia/Bangkok').date() if event.repeat_end else None
     old_start = arrow.get(event.start, 'Asia/Bangkok').datetime
+    old_end = arrow.get(event.end, 'Asia/Bangkok').datetime
+    old_repeat_end = arrow.get(event.repeat_end, 'Asia/Bangkok').date() if event.repeat_end else None
     repeat_end = arrow.get(event.repeat_end, 'Asia/Bangkok').date() if event.repeat_end else None
     complaints = ComplaintRecord.query.filter(ComplaintRecord.topic.has(ComplaintTopic.code.in_(['room', 'runied'])),
                                               or_(ComplaintRecord.status.has(ComplaintStatus.code != 'completed'),
@@ -345,9 +347,10 @@ def edit_detail(event_id):
     start = localtz.localize(event.datetime.lower)
     end = localtz.localize(event.datetime.upper)
     if form.validate_on_submit():
+        start = arrow.get(form.start.data, 'Asia/Bangkok')
+        end = arrow.get(form.end.data, 'Asia/Bangkok')
         event_start = arrow.get(form.start.data, 'Asia/Bangkok').datetime
-        hour = int(form.hour.data)
-        event_end = arrow.get(form.start.data, 'Asia/Bangkok').shift(hours=hour).datetime
+        event_end = arrow.get(form.end.data, 'Asia/Bangkok').datetime
         overlaps = get_overlaps(event.room.id, event_start, event_end)
         overlaps = [evt for evt in overlaps if evt.id != event_id]
         if overlaps:
@@ -375,18 +378,23 @@ def edit_detail(event_id):
                 for g in group.group_members:
                     event.participants.append(g.staff)
         db.session.add(event)
-        if (form.booking.data and form.repeat_end.data) and ((form.booking.data != old_booking) or (repeat_end != old_repeat_end) or (event_start != old_start)):
+        if (form.booking.data and form.repeat_end.data) and ((form.booking.data != old_booking) or (repeat_end != old_repeat_end) or (event_start != old_start)
+            or (event_end != old_end)):
             db.session.commit()
             day = 7 if form.booking.data == 'ทุกสัปดาห์' else 1
-            current_date = arrow.get(form.start.data, 'Asia/Bangkok').shift(days=day)
-            while current_date.date() <= repeat_end:
+            current_start = start.shift(days=day)
+            current_end = end.shift(days=day)
+            while (current_start.date() <= repeat_end and current_end.date() <= repeat_end):
                 # if calendar.weekday(current_date.year, current_date.month, current_date.day) < 5:
-                current_startdatetime = current_date.datetime
-                current_enddatetime = current_date.shift(hours=hour).datetime
+                current_startdatetime = current_start.datetime
+                current_enddatetime = current_end.datetime
                 event_overlaps = get_overlaps(event.room_id, current_startdatetime, current_enddatetime)
                 if not event_overlaps:
-                    create_event(current_startdatetime, current_enddatetime, repeat_end, master_id, event.room_id, form)
-                current_date = current_date.shift(days=day)
+                    new_evts = create_event(current_startdatetime, current_enddatetime, repeat_end, master_id, event.room_id,
+                                            form)
+                    new_events.append(new_evts)
+                current_start = current_start.shift(days=day)
+                current_end = current_end.shift(days=day)
         else:
             db.session.commit()
 
@@ -430,7 +438,37 @@ def edit_detail(event_id):
                     except LineBotApiError:
                         pass
         else:
-            print(msg, event.room.coordinator, event.room.coordinators)
+            print(msg, event.room.coordinator)
+
+        if new_events and new_events[0].participants and new_events[0].notify_participants:
+            new_event_times = ', '.join(
+                f"{arrow.get(new_event.start, 'Asia/Bangkok').datetime.astimezone(localtz).strftime('%d/%m/%Y %H:%M')} - "
+                f"{arrow.get(new_event.end, 'Asia/Bangkok').datetime.astimezone(localtz).strftime('%d/%m/%Y %H:%M')}"
+                for new_event in new_events
+            )
+            participant_emails = [f'{account.email}@mahidol.ac.th' for account in new_events[0].participants]
+            msg = (f'{new_events[0].creator.fullname} ได้จองห้อง {new_events[0].room.number} สำหรับ {new_events[0].title} '
+                   f'เวลา {new_event_times}.'
+                   f'มีความต้องการเพิ่มเติมคือ {new_events[0].note}'
+                   )
+            title = f'แจ้งนัดหมาย{new_events[0].category}'
+            message = f'ท่านได้รับเชิญให้เข้าร่วม {new_events[0].title}'
+            message += f' เวลา {new_event_times}'
+            message += f' ณ ห้อง {new_events[0].room.number} {new_events[0].room.location}'
+            message += f'\n\nขอความอนุเคราะห์เข้าร่วมในวันและเวลาดังกล่าว'
+            if not current_app.debug:
+                if new_events[0].note:
+                    for coord in new_events[0].room.coordinators:
+                            try:
+                                line_bot_api.push_message(to=coord.line_id, messages=TextSendMessage(text=msg))
+                            except LineBotApiError:
+                                pass
+                send_mail(participant_emails, title, message, attachments=_build_room_event_attachment(new_events[0]))
+            else:
+                print(msg, [coord.line_id for coord in new_events[0].room.coordinators], new_events[0].note)
+                print(message, participant_emails)
+
+
         flash(u'อัพเดตรายการเรียบร้อย', 'success')
         return redirect(url_for('room.index'))
     else:
@@ -473,17 +511,18 @@ def room_reserve(room_id):
     if form.validate_on_submit():
         new_event = RoomEvent()
         if form.start.data:
+            start = arrow.get(form.start.data, 'Asia/Bangkok')
             startdatetime = arrow.get(form.start.data, 'Asia/Bangkok').datetime
-            hour = int(form.hour.data)
-            enddatetime = arrow.get(form.start.data, 'Asia/Bangkok').shift(hours=hour).datetime
         else:
+            start = None
             startdatetime = None
-            hour = None
+
+        if form.end.data:
+            end = arrow.get(form.end.data, 'Asia/Bangkok')
+            enddatetime = arrow.get(form.end.data, 'Asia/Bangkok').datetime
+        else:
+            end = None
             enddatetime = None
-        # if form.end.data:
-        #     enddatetime = arrow.get(form.end.data, 'Asia/Bangkok').datetime
-        # else:
-        #     enddatetime = None
 
         if room_id and startdatetime and enddatetime:
             if get_overlaps(room_id, startdatetime, enddatetime):
@@ -516,18 +555,19 @@ def room_reserve(room_id):
             if form.booking.data and form.repeat_end.data:
                 db.session.commit()
                 day = 7 if form.booking.data == 'ทุกสัปดาห์' else 1
-                current_date = arrow.get(form.start.data, 'Asia/Bangkok').shift(days=day)
-                while current_date.date() <= repeat_end:
+                current_start = start.shift(days=day)
+                current_end = end.shift(days=day)
+                while (current_start.date() <= repeat_end and current_end.date() <= repeat_end):
                     # if calendar.weekday(current_date.year, current_date.month, current_date.day) < 5:
-                    current_startdatetime = current_date.datetime
-                    current_enddatetime = current_date.shift(hours=hour).datetime
+                    current_startdatetime = current_start.datetime
+                    current_enddatetime = current_end.datetime
                     event_overlaps = get_overlaps(room_id, current_startdatetime, current_enddatetime)
                     if not event_overlaps:
                         create_event(current_startdatetime, current_enddatetime, repeat_end, new_event.id, room_id, form)
-                    current_date = current_date.shift(days=day)
+                    current_start = current_start.shift(days=day)
+                    current_end = current_end.shift(days=day)
             else:
                 db.session.commit()
-            # TODO: alert by Line for the same-day booking
 
             if new_event.secondary:
                 event_times = ', '.join(
@@ -661,10 +701,8 @@ def check_room_availability():
     event_id = request.args.get('event_id', type=int)
     start = request.args.get('start')
     end = request.args.get('end')
-    hour = request.args.get('hour')
     start = dateutil.parser.isoparse(start).astimezone(pytz.timezone('Asia/Bangkok'))
-    end = start + timedelta(hours=int(hour))
-    # end = dateutil.parser.isoparse(start).astimezone(pytz.timezone('Asia/Bangkok'))
+    end = dateutil.parser.isoparse(end).astimezone(pytz.timezone('Asia/Bangkok'))
     overlaps = get_overlaps(room_id, start, end, session_id, session_attr)
     overlaps = [evt for evt in overlaps if evt.id != event_id]
     if overlaps:
