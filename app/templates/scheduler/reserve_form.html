@@ -261,7 +261,6 @@
                                 <div class="reserve-field-card">
                                     <label class="label">วันที่เริ่ม</label>
                                     {{ form.start(class='input') }}
-                                    <p class="reserve-help is-danger">หากทำการจองซ้ำ กรุณากำหนดวันเริ่มต้นและวันสิ้นสุดเป็นวันเดียวกัน</p>
                                 </div>
                                 <div class="reserve-field-card">
                                     <label class="label">วันที่สิ้นสุด</label>
@@ -563,7 +562,7 @@
                 let endDateTime = moment($('input[name="end"]').val(), DATETIME_FORMAT)
                 let repeatEndDate = picker.startDate
                 if ((startDateTime.format(DATE_FORMAT) >= repeatEndDate.format(DATE_FORMAT)) ||
-                    (endDateTime.format(DATE_FORMAT) >= repeatEndDate.format(DATE_FORMAT)))  {
+                    (endDateTime.format(DATE_FORMAT) > repeatEndDate.format(DATE_FORMAT)))  {
                     $(this).val('')
                     alert('กรุณาตรวจสอบวันที่ต้องการจองซ้ำอีกครั้ง')
                     return
