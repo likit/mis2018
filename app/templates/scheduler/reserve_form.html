@@ -424,9 +424,9 @@
         const DATE_FORMAT = 'YYYY-MM-DD'
         let triggerAvailabilityCheck = function () {
             let startValue = $('input[name="start"]').val()
-            let hour = $('select[name="hour"]').val()
+            let endValue = $('input[name="end"]').val()
 
-            if (!startValue || !hour) {
+            if (!startValue || !endValue) {
                 return
             }
 
@@ -445,7 +445,7 @@
 
         let checkAvailability = function (e) {
             let startDateTime = moment($('input[name="start"]').val(), DATETIME_FORMAT)
-            let hour = $('select[name="hour"]').val()
+            let endDateTime = moment($('input[name="end"]').val(), DATETIME_FORMAT)
 
             htmx.ajax('GET',
                 '{{ url_for("room.check_room_availability") }}',
@@ -455,13 +455,14 @@
                     values: {
                         'room': {{ room.id|tojson|safe }},
                         'start': startDateTime.format(),
-                        'hour': hour,
+                        'end': endDateTime.format(),
                         'session_id': null,
                         {% if event %}
                             'event_id': {{ event.id|tojson|safe }}
                         {% endif %}
                     }
-                })
+                }
+            )
         }
         $(document).ready(() => {
             $('.js-example-basic-multiple').select2({
