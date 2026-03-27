@@ -330,6 +330,7 @@ def approve_event(event_id):
 @room.route('/events/edit/<int:event_id>', methods=['POST', 'GET'])
 @login_required
 def edit_detail(event_id):
+    new_events = []
     event = RoomEvent.query.get(event_id)
     master_id = event.master_id or event.id
     old_booking = event.booking
@@ -389,7 +390,9 @@ def edit_detail(event_id):
                 current_enddatetime = current_end.datetime
                 event_overlaps = get_overlaps(event.room_id, current_startdatetime, current_enddatetime)
                 if not event_overlaps:
-                    create_event(current_startdatetime, current_enddatetime, repeat_end, master_id, event.room_id, form)
+                    new_evts = create_event(current_startdatetime, current_enddatetime, repeat_end, master_id, event.room_id,
+                                            form)
+                    new_events.append(new_evts)
                 current_start = current_start.shift(days=day)
                 current_end = current_end.shift(days=day)
         else:
@@ -421,6 +424,35 @@ def edit_detail(event_id):
                     pass
         else:
             print(msg, event.room.coordinator)
+
+        if new_events and new_events[0].participants and new_events[0].notify_participants:
+            new_event_times = ', '.join(
+                f"{arrow.get(new_event.start, 'Asia/Bangkok').datetime.astimezone(localtz).strftime('%d/%m/%Y %H:%M')} - "
+                f"{arrow.get(new_event.end, 'Asia/Bangkok').datetime.astimezone(localtz).strftime('%d/%m/%Y %H:%M')}"
+                for new_event in new_events
+            )
+            participant_emails = [f'{account.email}@mahidol.ac.th' for new_event in new_events for account in new_event.participants]
+            msg = (f'{new_events[0].creator.fullname} ได้จองห้อง {new_events[0].room.number} สำหรับ {new_events[0].title} '
+                   f'เวลา {new_event_times}.'
+                   f'มีความต้องการเพิ่มเติมคือ {new_events[0].note}'
+                   )
+            title = f'แจ้งนัดหมาย{new_events[0].category}'
+            message = f'ท่านได้รับเชิญให้เข้าร่วม {new_events[0].title}'
+            message += f' เวลา {new_event_times}'
+            message += f' ณ ห้อง {new_events[0].room.number} {new_events[0].room.location}'
+            message += f'\n\nขอความอนุเคราะห์เข้าร่วมในวันและเวลาดังกล่าว'
+            if not current_app.debug:
+                if new_events[0].note:
+                        try:
+                            line_bot_api.push_message(to=new_events[0].room.coordinator.line_id, messages=TextSendMessage(text=msg))
+                        except LineBotApiError:
+                            pass
+                send_mail(participant_emails, title, message, attachments=_build_room_event_attachment(new_events[0]))
+            else:
+                print(msg, [new_event.room.coordinator for new_event in new_events], new_events[0].note)
+                print(message)
+
+
         flash(u'อัพเดตรายการเรียบร้อย', 'success')
         return redirect(url_for('room.index'))
     else:
