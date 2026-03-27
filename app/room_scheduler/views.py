@@ -414,14 +414,29 @@ def edit_detail(event_id):
                 )
             else:
                 print(message)
-        msg = f'{event.creator.fullname} ได้แก้ไขการจองห้อง {event.room} สำหรับ {event.title} เวลา {event_start.astimezone(localtz).strftime("%d/%m/%Y %H:%M")} - {event_end.astimezone(localtz).strftime("%d/%m/%Y %H:%M")}.'
+        if event_times:
+            msg = (f'{event.creator.fullname} ได้แก้ไขการจองห้อง {event.room} สำหรับ {event.title} '
+                   f'เวลา {event_times}.')
+        else:
+            msg = (f'{event.creator.fullname} ได้แก้ไขการจองห้อง {event.room} สำหรับ {event.title} '
+                   f'เวลา {event_start.astimezone(localtz).strftime("%d/%m/%Y %H:%M")} - '
+                   f'{event_end.astimezone(localtz).strftime("%d/%m/%Y %H:%M")}.')
+        if event.note:
+            msg += f'\nมีความต้องการเพิ่มเติมคือ {event.note}'
+
         if not current_app.debug:
-            if event.room.coordinator and event.room.coordinator.line_id:
-                try:
-                    line_bot_api.push_message(to=event.room.coordinator.line_id,
-                                              messages=TextSendMessage(text=msg))
-                except LineBotApiError:
-                    pass
+            coordinators = []
+            if event.room.coordinator:
+                coordinators.append(event.room.coordinator)
+            coordinators.extend(event.room.coordinators)
+            sent_ids = set()
+            for coord in coordinators:
+                if coord and coord.line_id and coord.id not in sent_ids:
+                    try:
+                        line_bot_api.push_message(to=coord.line_id, messages=TextSendMessage(text=msg))
+                        sent_ids.add(coord.id)
+                    except LineBotApiError:
+                        pass
         else:
             print(msg, event.room.coordinator)
 

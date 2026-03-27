@@ -12,11 +12,10 @@ from app.eduqa.models import EduQAInstructor
 from . import staffbp as staff
 from app.main import get_weekdays, mail, app, csrf
 from app.models import Holidays
-from flask import (jsonify, render_template, request,
+from flask import (jsonify, render_template, render_template_string, request,
                    redirect, url_for, flash, session, send_from_directory,
                    make_response, current_app, send_file)
-from datetime import date, timedelta
-from sqlalchemy import or_
+from datetime import date, timedelta, datetime
 from collections import defaultdict, namedtuple
 import pytz
 from sqlalchemy import and_, desc, cast, Date, or_, extract
@@ -2210,9 +2209,9 @@ def login_scan():
             db.session.commit()
             try:
                 if activity == 'checked in':
-                    msg = f'ท่านได้ทำแสกนเข้างานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
+                    msg = f'ท่านได้ทำสแกนเข้างานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
                 else:
-                    msg = f'ท่านได้ทำแสกนออกงานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
+                    msg = f'ท่านได้ทำสแกนออกงานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
                 line_bot_api.push_message(to=person.staff_account.line_id, messages=TextSendMessage(text=msg))
             except LineBotApiError:
                 pass
@@ -2405,7 +2404,7 @@ def login_scan_gj():
                 qrcode_in_exp_datetime=qrcode_exp_datetime.astimezone(pytz.utc)
             )
             try:
-                msg = f'ท่านได้ทำแสกนเข้า/ออกงานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
+                msg = f'ท่านได้ทำสแกนเข้า/ออกงานล่าสุดเมื่อ {now.strftime("%d/%m/%Y %H:%M:%S")}'
                 line_bot_api.push_message(to=person.staff_account.line_id,
                                           messages=TextSendMessage(text=msg))
             except LineBotApiError:
@@ -3248,7 +3247,7 @@ def seminar_pre_register_info(seminar_id):
 def create_seminar():
     form = StaffSeminarForm()
     if form.validate_on_submit():
-        is_duplicate = StaffSeminar.query.filter_by(topic=form.topic.data).first()
+        is_duplicate = StaffSeminar.query.filter_by(topic=form.topic.data, start_datetime=form.start_datetime.data).first()
         if not is_duplicate:
             seminar = StaffSeminar()
             form.populate_obj(seminar)
@@ -3280,12 +3279,68 @@ def create_seminar():
             else:
                 return redirect(url_for('staff.seminar_create_record', seminar_id=seminar.id))
         else:
-            flash('พบชื่อกิจกรรมนี้แล้ว กรุณาค้นหาจากชื่อกิจกรรมและกดเข้าร่วมได้โดยไม่ต้องสร้างอบรมใหม่', 'warning')
-            return redirect(url_for('staff.seminar_attends_each_person'))
+            return redirect(url_for('staff.seminar_create_record', seminar_id=is_duplicate.id))
     else:
         for err in form.errors:
             flash('{}: {}'.format(err, form.errors[err]), 'danger')
     return render_template('staff/seminar_create_event.html', form=form)
+
+
+@staff.route('/seminar/suggest')
+@login_required
+def seminar_suggest():
+    q = (request.args.get('q') or '').strip()
+    suggestions = []
+    current_fy = convert_to_fiscal_year(datetime.today())
+    prev_start, prev_end = get_start_end_date_for_fiscal_year(current_fy - 1)
+    _, next_end = get_start_end_date_for_fiscal_year(current_fy + 1)
+    if q:
+        seminars = StaffSeminar.query.filter(
+            StaffSeminar.topic.ilike(f"%{q}%"),
+            StaffSeminar.start_datetime >= prev_start,
+            StaffSeminar.start_datetime <= next_end
+        ).order_by(StaffSeminar.start_datetime.desc()).limit(15).all()
+        for seminar in seminars:
+            suggestions.append({
+                'id': seminar.id,
+                'topic': seminar.topic,
+                'topic_type': seminar.topic_type,
+                'organize_by': seminar.organize_by,
+                'location': seminar.location,
+                'is_online': bool(seminar.is_online),
+                'start_datetime': seminar.start_datetime.isoformat(),
+                'end_datetime': seminar.end_datetime.isoformat(),
+                'start_display': seminar.start_datetime,
+                'end_display': seminar.end_datetime,
+            })
+    return render_template_string("""
+        {% if suggestions %}
+            <div class="box is-12 suggest-box">
+                <p class="is-size-6 has-text-grey">เลือกจากรายการอบรมที่มีอยู่</p>
+                <div class="buttons is-fullwidth">
+                    {% for s in suggestions %}
+                        <button type="button"
+                                class="button is-white is-fullwidth has-text-left"
+                                onclick='applySeminarSuggestion({{ s|tojson }})'>
+                            <strong>
+                                {% if s.topic|length > 20 %}
+                                    {{ s.topic[:150] }}...
+                                {% else %}
+                                    {{ s.topic }}
+                                {% endif %}
+                            </strong>
+                            <span class="is-size-7 has-text-grey">
+                                {{ s.start_display|localdate }} - {{ s.end_display|localdate }}
+                                {% if s.organize_by %}| {{ s.organize_by }}{% endif %}
+                            </span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <p class="suggest-empty">ไม่พบรายการอบรมที่ตรงกับคำค้นหา</p>
+        {% endif %}
+            """, suggestions=suggestions)
 
 
 @staff.route('/seminar/add-attend/for-hr/<int:seminar_id>')
@@ -3399,6 +3454,75 @@ def seminar_create_record(seminar_id):
     form = MyStaffSeminarAttendForm()
     seminar = StaffSeminar.query.get(seminar_id)
     if form.validate_on_submit():
+        bulk_ids = request.form.getlist('bulk_staff_ids')
+        if secretary_permission.can() and bulk_ids:
+            batch = StaffSeminarBatch(seminar_id=seminar.id, created_by_id=current_user.id)
+            db.session.add(batch)
+            db.session.flush()
+            created_ids = []
+            missing = []
+            for raw_id in bulk_ids:
+                if not str(raw_id).isdigit():
+                    continue
+                staff_account = StaffAccount.query.get(int(raw_id))
+                if not staff_account:
+                    missing.append(raw_id)
+                    continue
+                is_attend = StaffSeminarAttend.query.filter_by(seminar=seminar, staff=staff_account).first()
+                if is_attend:
+                    continue
+                attend = StaffSeminarAttend()
+                form.populate_obj(attend)
+                objective = StaffSeminarObjective.query.filter_by(objective=request.form.get('objective')).first()
+                if objective:
+                    attend.objectives = [objective]
+                attend.start_datetime = tz.localize(form.start_datetime.data)
+                attend.end_datetime = tz.localize(form.end_datetime.data)
+                attend.staff = staff_account
+                attend.seminar = seminar
+                if form.invited_document_id.data:
+                    attend.invited_document_id = form.invited_document_id.data
+                    attend.invited_organization = form.invited_organization.data
+                    attend.invited_document_date = form.invited_document_date.data
+                attend.attend_online = True if request.form.get('is_online') else False
+                if form.approver.data:
+                    leave_approver_id = request.form.get('approver')
+                    leave_approver = StaffLeaveApprover.query.get(leave_approver_id)
+                    attend.lower_level_approver_account_id = leave_approver.approver_account_id
+                    attend.document_title = form.document_title.data
+                attend.created_by_id = current_user.id
+                attend.batch_id = batch.id
+                db.session.add(attend)
+                db.session.flush()
+                document_approver = StaffSeminarDocumentApprover(
+                    seminar_attend=attend,
+                    position_id=request.form.get('position')
+                )
+                db.session.add(document_approver)
+                if "IDP" in request.form.get('objective'):
+                    yearly_budget = get_seminar_yearly_budget(staff_account.id, seminar.start_datetime)
+                    if attend.budget:
+                        yearly_budget.total_used = yearly_budget.total_used + attend.budget
+                        yearly_budget.remaining = yearly_budget.remaining - attend.budget
+                        db.session.add(yearly_budget)
+                    idp_items = request.form.getlist('idps')
+                    if idp_items:
+                        from app.PA.models import IDPItem
+                        for idp_item in idp_items:
+                            item = IDPItem.query.get(idp_item)
+                            if item:
+                                attend.idp_items.append(item)
+                created_ids.append(attend.id)
+            db.session.commit()
+            if missing:
+                flash('ไม่พบผู้ใช้งาน: {}'.format(", ".join(missing)), 'warning')
+            if created_ids:
+                flash('เพิ่มข้อมูลบุคลากรหลายคนเรียบร้อยแล้ว', 'success')
+                return redirect(url_for('staff.show_seminar_info_each_person',
+                                        record_id=created_ids[0],
+                                        bulk_ids=",".join([str(i) for i in created_ids])))
+            flash('ไม่พบรายการที่สามารถเพิ่มได้', 'warning')
+            return redirect(url_for('staff.seminar_create_record', seminar_id=seminar_id))
         is_attend = StaffSeminarAttend.query.filter_by(seminar=seminar, staff=current_user).first()
         if not is_attend:
             attend = StaffSeminarAttend()
@@ -3421,6 +3545,7 @@ def seminar_create_record(seminar_id):
                 leave_approver = StaffLeaveApprover.query.get(leave_approver_id)
                 attend.lower_level_approver_account_id = leave_approver.approver_account_id
                 attend.document_title = form.document_title.data
+            attend.created_by_id = current_user.id
             db.session.add(attend)
 
             document_approver = StaffSeminarDocumentApprover(
@@ -3475,7 +3600,43 @@ def seminar_create_record(seminar_id):
     else:
         for err in form.errors:
             flash('{}: {}'.format(err, form.errors[err]), 'danger')
-    return render_template('staff/seminar_create_record.html', seminar=seminar, form=form)
+    staff_list = []
+    if secretary_permission.can():
+        for account in StaffAccount.query.filter(or_(StaffAccount.personal_info.has(retired=False),
+                        StaffAccount.personal_info.has(retired=None))).all():
+            staff_list.append({
+                'id': account.id,
+                'fullname': account.personal_info.fullname,
+                'email': account.email
+            })
+    return render_template('staff/seminar_create_record.html', seminar=seminar, form=form,
+                           is_secretary=secretary_permission.can(), staff_list=staff_list)
+
+
+@staff.route('/seminar/batches')
+@login_required
+@secretary_permission.require()
+def seminar_batch_history():
+    batches = StaffSeminarBatch.query.filter_by(created_by_id=current_user.id) \
+        .order_by(StaffSeminarBatch.created_at.desc()).all()
+    return render_template('staff/seminar_batch_history.html', batches=batches)
+
+
+@staff.route('/seminar/batch/<int:batch_id>')
+@login_required
+@secretary_permission.require()
+def seminar_batch_detail(batch_id):
+    batch = StaffSeminarBatch.query.get(batch_id)
+    if not batch or batch.created_by_id != current_user.id:
+        flash('ไม่พบข้อมูลชุดบันทึก', 'warning')
+        return redirect(url_for('staff.seminar_batch_history'))
+    attend_ids = [a.id for a in batch.attends.all()]
+    if not attend_ids:
+        flash('ไม่พบรายการผู้เข้าร่วมในชุดนี้', 'warning')
+        return redirect(url_for('staff.seminar_batch_history'))
+    return redirect(url_for('staff.show_seminar_info_each_person',
+                            record_id=attend_ids[0],
+                            bulk_ids=",".join([str(i) for i in attend_ids])))
 
 
 @staff.route('/seminar/get-idp/<int:seminar_id>', methods=['GET'])
@@ -3837,6 +3998,13 @@ def delete_participant(attend_id):
 @login_required
 def show_seminar_info_each_person(record_id):
     attend = StaffSeminarAttend.query.get(record_id)
+    bulk_ids_param = request.args.get('bulk_ids', '').strip()
+    bulk_ids = []
+    if bulk_ids_param:
+        for raw_id in bulk_ids_param.split(','):
+            raw_id = raw_id.strip()
+            if raw_id.isdigit():
+                bulk_ids.append(int(raw_id))
     proposal = StaffSeminarProposal.query.filter_by(seminar_attend_id=attend.id).all()
     approval = StaffSeminarApproval.query.filter_by(seminar_attend_id=attend.id).first()
     all_hr = StaffSpecialGroup.query.filter_by(group_code='hr').first()
@@ -3876,6 +4044,20 @@ def show_seminar_info_each_person(record_id):
         prefix_position = ''
     telephone = seminar_attend.staff.personal_info.telephone if seminar_attend.staff.personal_info.telephone \
         else '.......'
+    proposer_list_text = str(seminar_attend.staff.personal_info)
+    proposer_names = []
+    if bulk_ids:
+        attend_map = {a.id: a for a in StaffSeminarAttend.query.filter(StaffSeminarAttend.id.in_(bulk_ids)).all()}
+        names = []
+        for idx, attend_id in enumerate(bulk_ids, start=1):
+            record = attend_map.get(attend_id)
+            if record:
+                names.append(f"{idx}) {record.staff.personal_info}")
+                proposer_names.append(str(record.staff.personal_info))
+        if names:
+            proposer_list_text = " ".join(names)
+    else:
+        proposer_names = [str(seminar_attend.staff.personal_info)]
     approver = seminar_attend.lower_level_approver.personal_info if seminar_attend.lower_level_approver else ''
     document_approver = StaffSeminarDocumentApprover.query.filter_by(seminar_attend=seminar_attend).first()
     approver_position = document_approver.position.position if document_approver else ''
@@ -3900,6 +4082,7 @@ def show_seminar_info_each_person(record_id):
                            flight_ticket_cost=flight_ticket_cost, train_ticket_cost=train_ticket_cost,
                            taxi_cost=taxi_cost, fuel_cost=fuel_cost, org_name=org_name, attend_online=attend_online,
                            prefix_position=prefix_position, telephone=telephone,
+                           proposer_list_text=proposer_list_text, proposer_names=proposer_names,
                            approver=approver, approver_position=approver_position, idp_value=idp_value,
                            idp_pre_item=idp_pre_item, idp_item=idp_item)
 
@@ -3964,7 +4147,8 @@ def seminar_attends_each_person():
     START_FISCAL_DATE, _ = get_fiscal_date(datetime.today())
     yearly_budget = get_seminar_yearly_budget(current_user.id, START_FISCAL_DATE)
     return render_template('staff/seminar_records_each_person.html',
-                           seminar_records=seminar_records, approver=approver, yearly_budget=yearly_budget)
+                           seminar_records=seminar_records, approver=approver, yearly_budget=yearly_budget,
+                           secretary_permission=secretary_permission)
 
 
 @staff.route('/seminar/attends-each-person/details/<int:staff_account_id>', methods=['GET', 'POST'])
@@ -4716,17 +4900,20 @@ def send_holidays_data():
     for rec in Holidays.query.all():
         # The event object is a dict object with a 'summary' key.
         text_color = '#ffffff'
-        bg_color = '#4da6ff'
+        bg_color = '#ff9f1a'
         border_color = '#ffffff'
+        holiday_date = rec.holiday_date.date().isoformat() if rec.holiday_date else None
         records.append({
             'id': rec.id,
-            'start': rec.holiday_date.astimezone(tz).isoformat() if rec.holiday_date else None,
-            'end': rec.holiday_date.astimezone(tz).isoformat() if rec.holiday_date else None,
+            'start': holiday_date,
+            'end': holiday_date,
             'title': u'{}'.format(rec.holiday_name),
             'backgroundColor': bg_color,
             'borderColor': border_color,
             'textColor': text_color,
-            'type': 'login'
+            'type': 'holiday',
+            'allDay': True,
+            'className': ['holiday-event']
         })
     return jsonify(records)
 
@@ -4921,11 +5108,11 @@ def geo_checkin():
         db.session.commit()
         try:
             if activity == 'checked in':
-                msg = f'ท่านได้ทำแสกนเข้างานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
+                msg = f'ท่านได้ทำสแกนเข้างานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
             elif activity == 'checked out':
-                msg = f'ท่านได้ทำแสกนออกงานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
+                msg = f'ท่านได้ทำสแกนออกงานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
             else:
-                msg = f'ท่านได้ทำแสกนเข้า/ออกงานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
+                msg = f'ท่านได้ทำสแกนเข้า/ออกงานล่าสุดเมื่อ {now.astimezone(tz).strftime("%d/%m/%Y %H:%M:%S")}'
             line_bot_api.push_message(to=current_user.line_id, messages=TextSendMessage(text=msg))
         except LineBotApiError:
             pass
