@@ -378,7 +378,7 @@ def edit_detail(event_id):
                 for g in group.group_members:
                     event.participants.append(g.staff)
         db.session.add(event)
-        if (form.booking.data and form.repeat_end.data) and ((form.booking.data != old_booking) or (repeat_end != old_repeat_end) or (event_start != old_start)
+        if (form.is_repeat_booking.data and form.booking.data and form.repeat_end.data) and ((form.booking.data != old_booking) or (repeat_end != old_repeat_end) or (event_start != old_start)
             or (event_end != old_end)):
             db.session.commit()
             day = 7 if form.booking.data == 'ทุกสัปดาห์' else 1
@@ -549,7 +549,7 @@ def room_reserve(room_id):
                         new_event.participants.append(g.staff)
             db.session.add(new_event)
 
-            if form.booking.data and form.repeat_end.data:
+            if form.is_repeat_booking.data and form.booking.data and form.repeat_end.data:
                 db.session.commit()
                 day = 7 if form.booking.data == 'ทุกสัปดาห์' else 1
                 current_start = start.shift(days=day)
