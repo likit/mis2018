@@ -648,8 +648,8 @@ def check_room_availability():
     end = request.args.get('end')
     hour = request.args.get('hour')
     start = dateutil.parser.isoparse(start).astimezone(pytz.timezone('Asia/Bangkok'))
-    # end = start + timedelta(hours=int(hour))
-    end = dateutil.parser.isoparse(end).astimezone(pytz.timezone('Asia/Bangkok'))
+    end = start + timedelta(hours=int(hour))
+    # end = dateutil.parser.isoparse(start).astimezone(pytz.timezone('Asia/Bangkok'))
     overlaps = get_overlaps(room_id, start, end, session_id, session_attr)
     overlaps = [evt for evt in overlaps if evt.id != event_id]
     if overlaps:
