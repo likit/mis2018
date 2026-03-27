@@ -1210,6 +1210,9 @@ def info_request_cancel_leave_request():
 @login_required
 def approver_cancel_leave_request(req_id, cancelled_account_id):
     req = StaffLeaveRequest.query.get(req_id)
+    if req.cancelled_at:
+        flash('รายการถูกยกเลิกเรียบร้อยแล้ว', 'warning')
+        return redirect(request.referrer)
     req.cancelled_at = tz.localize(datetime.today())
     req.cancelled_account_id = cancelled_account_id
     db.session.add(req)
@@ -1278,20 +1281,16 @@ def approver_cancel_leave_request(req_id, cancelled_account_id):
 @login_required
 def cancel_leave_request(req_id, cancelled_account_id):
     req = StaffLeaveRequest.query.get(req_id)
+    if req.cancelled_at:
+        flash('รายการถูกยกเลิกเรียบร้อยแล้ว', 'warning')
+        return redirect(request.referrer)
     req.cancelled_at = tz.localize(datetime.today())
     req.cancelled_account_id = cancelled_account_id
     db.session.add(req)
     db.session.commit()
 
     _, END_FISCAL_DATE = get_fiscal_date(req.start_datetime)
-
     quota = req.quota
-    used_quota = current_user.personal_info.get_total_leaves(quota.id, tz.localize(START_FISCAL_DATE),
-                                                             tz.localize(END_FISCAL_DATE))
-    pending_days = current_user.personal_info.get_total_pending_leaves_request \
-        (quota.id, tz.localize(START_FISCAL_DATE), tz.localize(END_FISCAL_DATE))
-    quota_limit = calculate_leave_quota_limit(req.staff.id, quota.id, req.start_datetime)
-
     is_used_quota = StaffLeaveUsedQuota.query.filter_by(leave_type_id=req.quota.leave_type_id,
                                                         staff_account_id=req.staff_account_id,
                                                         fiscal_year=END_FISCAL_DATE.year).first()
@@ -1314,6 +1313,11 @@ def cancel_leave_request(req_id, cancelled_account_id):
                 db.session.add(next_used_quota)
                 db.session.commit()
     else:
+        used_quota = current_user.personal_info.get_total_leaves(quota.id, tz.localize(START_FISCAL_DATE),
+                                                                 tz.localize(END_FISCAL_DATE))
+        pending_days = current_user.personal_info.get_total_pending_leaves_request \
+            (quota.id, tz.localize(START_FISCAL_DATE), tz.localize(END_FISCAL_DATE))
+        quota_limit = calculate_leave_quota_limit(req.staff.id, quota.id, req.start_datetime)
         new_used_quota = StaffLeaveUsedQuota(
             leave_type_id=req.quota.leave_type_id,
             staff_account_id=current_user.id,

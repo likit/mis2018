@@ -1587,7 +1587,7 @@ def all_pa_score():
                     total_score = pa_item.total_score(scoresheet)
                     net_total += total_score
                 except ZeroDivisionError:
-                    flash('คะแนนไม่สมบูรณ์ กรุณาตรวจสอบความถูกต้อง', 'danger')
+                    pass
             if net_total > 0:
                 performance_net_score = round(((net_total * 80) / 1000), 2)
                 record = {}
