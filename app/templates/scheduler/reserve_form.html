@@ -261,17 +261,12 @@
                                 <div class="reserve-field-card">
                                     <label class="label">วันที่เริ่ม</label>
                                     {{ form.start(class='input') }}
+                                    <p class="reserve-help is-danger">หากทำการจองซ้ำ กรุณากำหนดวันเริ่มต้นและวันสิ้นสุดเป็นวันเดียวกัน</p>
                                 </div>
                                 <div class="reserve-field-card">
                                     <label class="label">วันที่สิ้นสุด</label>
                                     {{ form.end(class='input') }}
                                 </div>
-{#                                <div class="reserve-field-card">#}
-{#                                    <label class="label">{{ form.hour.label.text }}</label>#}
-{#                                    <div class="select is-fullwidth">#}
-{#                                        {{ form.hour(required=true) }}#}
-{#                                    </div>#}
-{#                                </div>#}
                                 <div class="reserve-field-card is-full">
                                     <label class="checkbox">
                                         {{ form.is_repeat_booking() }}
