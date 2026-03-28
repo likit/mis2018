@@ -74,6 +74,9 @@ def create_request():
         form.populate_obj(detail)
         file = form.file_upload.data
         drive = initialize_gdrive()
+        if form.type.data == 'ปรับปรุงระบบที่มีอยู่' and not form.system.data:
+            flash('กรุณาเลือกระบบที่ต้องการปรับปรุง', 'danger')
+            return render_template('software_request/create_request.html', form=form)
         if file:
             file_name = secure_filename(file.filename)
             file.save(file_name)
