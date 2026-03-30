@@ -700,8 +700,11 @@ def check_room_availability():
     end = request.args.get('end')
     start = dateutil.parser.isoparse(start).astimezone(pytz.timezone('Asia/Bangkok'))
     end = dateutil.parser.isoparse(end).astimezone(pytz.timezone('Asia/Bangkok'))
-    overlaps = get_overlaps(room_id, start, end, session_id, session_attr)
-    overlaps = [evt for evt in overlaps if evt.id != event_id]
+    if start < end:
+        overlaps = get_overlaps(room_id, start, end, session_id, session_attr)
+        overlaps = [evt for evt in overlaps if evt.id != event_id]
+    else:
+        overlaps = None
     if overlaps:
         temp = '<span class="tag is-warning">{}-{} {}</span>'
         template = '<span class="tag is-danger">ห้องไม่ว่าง</span>'

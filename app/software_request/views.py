@@ -318,6 +318,7 @@ def create_timeline(detail_id=None, timeline_id=None):
         db.session.add(timeline)
         db.session.commit()
         timeline.request.updated_date = arrow.now('Asia/Bangkok').datetime
+        timeline.request.approver_id = current_user.id
         db.session.add(timeline)
         db.session.commit()
         if detail_id:
@@ -377,6 +378,7 @@ def update_timeline_status(timeline_id):
     timeline = SoftwareRequestTimeline.query.get(timeline_id)
     timeline.status = status
     timeline.request.updated_date = arrow.now('Asia/Bangkok').datetime
+    timeline.request.approver_id = current_user.id
     db.session.add(timeline)
     db.session.commit()
     scheme = 'http' if current_app.debug else 'https'
@@ -404,6 +406,7 @@ def delete_timeline(timeline_id):
     timeline = SoftwareRequestTimeline.query.get(timeline_id)
     timeline.status = 'ยกเลิกการพัฒนา'
     timeline.request.updated_date = arrow.now('Asia/Bangkok').datetime
+    timeline.request.approver_id = current_user.id
     db.session.add(timeline)
     db.session.commit()
     scheme = 'http' if current_app.debug else 'https'
@@ -477,6 +480,7 @@ def create_issue(detail_id=None, issue_id=None):
             db.session.add(issue)
             db.session.commit()
             issue.software_request_detail.updated_date = arrow.now('Asia/Bangkok').datetime
+            issue.software_request_detail.approver_id = current_user.id
             db.session.add(issue)
             db.session.commit()
         else:

@@ -536,7 +536,7 @@
             $('input[name="start"]').change(function () {
                 let startDateTime = moment($('input[name="start"]').val(), DATETIME_FORMAT)
                 let endDateTime = moment($('input[name="end"]').val(), DATETIME_FORMAT)
-                if (startDateTime.format() >= endDateTime.format()) {
+                if (startDateTime.format() == endDateTime.format()) {
                     alert('กรุณาตรวจสอบวันเริ่มและสิ้นสุดอีกครั้ง')
                     $(this).val('')
                     return
@@ -548,7 +548,7 @@
             $('input[name="end"]').change(function () {
                 let startDateTime = moment($('input[name="start"]').val(), DATETIME_FORMAT)
                 let endDateTime = moment($('input[name="end"]').val(), DATETIME_FORMAT)
-                if (startDateTime.format() >= endDateTime.format()) {
+                if (startDateTime.format() == endDateTime.format()) {
                     alert('กรุณาตรวจสอบวันเริ่มและสิ้นสุดอีกครั้ง')
                     $(this).val('')
                     return
@@ -561,7 +561,7 @@
                 let startDateTime = moment($('input[name="start"]').val(), DATETIME_FORMAT)
                 let endDateTime = moment($('input[name="end"]').val(), DATETIME_FORMAT)
                 let repeatEndDate = picker.startDate
-                if ((startDateTime.format(DATE_FORMAT) >= repeatEndDate.format(DATE_FORMAT)) ||
+                if ((startDateTime.format(DATE_FORMAT) > repeatEndDate.format(DATE_FORMAT)) ||
                     (endDateTime.format(DATE_FORMAT) > repeatEndDate.format(DATE_FORMAT)))  {
                     $(this).val('')
                     alert('กรุณาตรวจสอบวันที่ต้องการจองซ้ำอีกครั้ง')

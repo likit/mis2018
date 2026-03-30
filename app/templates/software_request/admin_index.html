@@ -48,27 +48,27 @@
                         <a href="{{ url_for('software_request.admin_index', tab='complete') }}">
                             <span class="icon is-small"><i class="fas fa-check"></i></span>
                             <span style="margin-right: .5em">เสร็จสิ้น</span>
-                            {% if complete_count %}
-                                <span class="tag is-rounded is-danger">{{ complete_count }}</span>
-                            {% endif %}
+{#                            {% if complete_count %}#}
+{#                                <span class="tag is-rounded is-danger">{{ complete_count }}</span>#}
+{#                            {% endif %}#}
                         </a>
                     </li>
                     <li {% if tab == 'disapprove' %}class="is-active"{% endif %}>
                         <a href="{{ url_for('software_request.admin_index', tab='disapprove') }}">
                             <span class="icon is-small"><i class="fas fa-times"></i></span>
                             <span style="margin-right: .5em">ไม่อนุมัติ</span>
-                            {% if disapprove_count %}
-                                <span class="tag is-rounded is-danger">{{ disapprove_count }}</span>
-                            {% endif %}
+{#                            {% if disapprove_count %}#}
+{#                                <span class="tag is-rounded is-danger">{{ disapprove_count }}</span>#}
+{#                            {% endif %}#}
                         </a>
                     </li>
                     <li {% if tab == 'cancel' %}class="is-active"{% endif %}>
                         <a href="{{ url_for('software_request.admin_index', tab='cancel') }}">
                             <span class="icon is-small"><i class="fas fa-ban"></i></span>
                             <span style="margin-right: .5em">ยกเลิก</span>
-                            {% if cancel_count %}
-                                <span class="tag is-rounded is-danger">{{ cancel_count }}</span>
-                            {% endif %}
+{#                            {% if cancel_count %}#}
+{#                                <span class="tag is-rounded is-danger">{{ cancel_count }}</span>#}
+{#                            {% endif %}#}
                         </a>
                     </li>
                     <li {% if tab == 'private' %}class="is-active"{% endif %}>
@@ -177,7 +177,10 @@
                 columns: [
                     {data: 'title'},
                     {data: 'type'},
-                    {data: 'description'},
+                    {
+                        data: 'description',
+                        width: "280px"
+                    },
                     {data: 'created_by'},
                     {data: 'org'},
                     {
