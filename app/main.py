@@ -5,7 +5,7 @@ import requests
 from flask_principal import Principal, PermissionDenied, Identity
 from flask.cli import AppGroup
 from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, abort
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
@@ -13,7 +13,7 @@ from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
 from flask_admin import Admin, AdminIndexView
-from flask_admin.contrib.sqla import ModelView
+from flask_admin.contrib.sqla import ModelView as FlaskAdminModelView
 from flask_wtf.csrf import CSRFProtect
 from flask_qrcode import QRcode
 from pydrive.auth import GoogleAuth
@@ -46,6 +46,24 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated and admin_permission.can()
+
+    def inaccessible_callback(self, name, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login', next=request.url))
+        return abort(403)
+
+
+class AdminOnlyModelView(FlaskAdminModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and admin_permission.can()
+
+    def inaccessible_callback(self, name, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login', next=request.url))
+        return abort(403)
+
+
+ModelView = AdminOnlyModelView
 
 
 load_dotenv()
