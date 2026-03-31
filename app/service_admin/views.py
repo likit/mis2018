@@ -1228,6 +1228,39 @@ def create_virus_disinfection_request(request_id=None):
                            form=form, menu=menu, request_id=request_id)
 
 
+@service_admin.route("/request/product_appearance_other")
+def get_product_appearance_other():
+    request_id = request.args.get("request_id")
+    product_appearance = request.args.get("product_appearance")
+    label = 'ระบุ'
+    if request_id:
+        service_request = ServiceRequest.query.get(request_id)
+        if service_request and service_request.data:
+            data = service_request.data
+            product_appearance_other = data.get('product_appearance_other', '')
+        else:
+            product_appearance_other = ''
+    else:
+        product_appearance_other = ''
+    if product_appearance == 'อื่นๆ โปรดระบุ':
+        html = f'''
+            <div class="field">
+                <label class="label">
+                    {label}
+                    <span class="has-text-danger">*</span>
+                </label>
+                <div class="control">
+                    <input name="product_appearance_other" class="input" value="{product_appearance_other}" required 
+                    oninvalid="this.setCustomValidity('กรุณากรอกรายละเอียด')" oninput="this.setCustomValidity('')">
+                </div>
+            </div>
+        '''
+    else:
+        html = '<input type="hidden" name="product_appearance_other" class="input" value="">'
+    resp = make_response(html)
+    return resp
+
+
 @service_admin.route("/request/product_storage")
 def get_product_storage():
     request_id = request.args.get("request_id")
@@ -1251,7 +1284,7 @@ def get_product_storage():
                 </label>
                 <div class="control">
                     <input name="product_storage_other" class="input" value="{product_storage_other}" required 
-                    oninvalid="this.setCustomValidity('กรุณาเลือกการเก็บรักษาผลิตภัณฑ์')" oninput="this.setCustomValidity('')">
+                    oninvalid="this.setCustomValidity('กรุณาเลือกกรอกรายละเอียด')" oninput="this.setCustomValidity('')">
                 </div>
             </div>
         '''
