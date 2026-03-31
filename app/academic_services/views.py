@@ -5143,9 +5143,8 @@ def create_address(address_id=None):
     if form.district.data:
         form.subdistrict.query = form.district.data.subdistricts
     else:
-        province = Province.query.first()
-        form.district.query = province.districts
-        form.subdistrict.query = province.districts[0].subdistricts if province.districts else ''
+        form.district.query = ''
+        form.subdistrict.query = ''
 
     if not form.taxpayer_identification_no.data:
         form.taxpayer_identification_no.data = current_user.customer_info.taxpayer_identification_no
@@ -5185,7 +5184,9 @@ def get_items():
         form.subdistrict.query = form.district.data.subdistricts
         if trigger == 'subdistrict':
             form.zipcode.data = form.subdistrict.data.zip_code
-
+    else:
+        form.district.query = ''
+        form.subdistrict.query = ''
     template = f'''
         {form.province(**{'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
         {form.district(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
