@@ -370,8 +370,8 @@ class BacteriaRequestForm(FlaskForm):
                       render_kw={"oninvalid": "this.setCustomValidity('กรุณาเลือกวันหมดอายุ')",
                                  "oninput": "this.setCustomValidity('')"
                                  })
-    lot_no = StringField('เลขที่ผลิต', validators=[DataRequired()],
-                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต')",
+    lot_no = StringField('เลขที่ผลิต / Lot no.', validators=[DataRequired()],
+                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต / Lot no.')",
                                     "oninput": "this.setCustomValidity('')"
                                     })
     manufacturer = StringField('ผู้ผลิต', validators=[DataRequired()],
@@ -565,8 +565,8 @@ class VirusDisinfectionRequestForm(FlaskForm):
                       render_kw={"oninvalid": "this.setCustomValidity('กรุณาเลือกวันหมดอายุ')",
                                  "oninput": "this.setCustomValidity('')"
                                  })
-    lot_no = StringField('เลขที่ผลิต', validators=[DataRequired()],
-                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต')",
+    lot_no = StringField('เลขที่ผลิต / Lot no.', validators=[DataRequired()],
+                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต / Lot no.')",
                                     "oninput": "this.setCustomValidity('')"
                                     })
     amount = StringField('จำนวนที่ส่ง', validators=[DataRequired()],
