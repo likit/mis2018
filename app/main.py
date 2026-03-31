@@ -2,6 +2,8 @@ import click
 import pandas
 import pandas as pd
 import requests
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 from flask_principal import Principal, PermissionDenied, Identity
 from flask.cli import AppGroup
 from dotenv import load_dotenv
@@ -11,7 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_required
 from flask_admin import Admin, AdminIndexView
 from flask_admin.contrib.sqla import ModelView as FlaskAdminModelView
 from flask_wtf.csrf import CSRFProtect
@@ -33,9 +35,22 @@ import base64
 #     BestTimePollMessage
 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+_json_keyfile = None
 
 
-def get_credential(json_keyfile):
+def get_json_keyfile():
+    global _json_keyfile
+    if _json_keyfile is None:
+        json_keyfile_url = os.environ.get('JSON_KEYFILE')
+        if not json_keyfile_url:
+            raise RuntimeError('JSON_KEYFILE environment variable is not set')
+        _json_keyfile = requests.get(json_keyfile_url, timeout=10).json()
+    return _json_keyfile
+
+
+def get_credential(json_keyfile=None):
+    if json_keyfile is None:
+        json_keyfile = get_json_keyfile()
     credentials = ServiceAccountCredentials.from_json_keyfile_dict(json_keyfile, scope)
     return gspread.authorize(credentials)
 
@@ -189,32 +204,110 @@ def load_user(user_id):
         return StaffAccount.query.get(int(user_id))
 
 
-@app.route('/')
-def index():
+def get_homepage_role_flags(user):
     central_admin = False
     assistant = False
-    if current_user.is_authenticated:
-        admins = ServiceAdmin.query.filter_by(admin_id=current_user.id).first()
+    if user.is_authenticated:
+        admins = ServiceAdmin.query.filter_by(admin_id=user.id).first()
         if admins and admins.is_central_admin:
             central_admin = True
         elif admins and admins.is_assistant:
             assistant = True
-        else:
-            central_admin = False
-            assistant = False
-    else:
-        central_admin = False
-        assistant = False
-    return render_template('index.html', central_admin=central_admin, assistant=assistant,
-                           now=datetime.now(tz=timezone('Asia/Bangkok')))
+    return central_admin, assistant
+
+
+def get_homepage_dashboard_context(user, now):
+    upcoming_invitations_query = (
+        MeetingInvitation.query
+        .options(joinedload(MeetingInvitation.meeting))
+        .join(MeetingEvent, MeetingInvitation.meeting_event_id == MeetingEvent.id)
+        .filter(
+            MeetingInvitation.staff_id == user.id,
+            MeetingEvent.start >= now,
+        )
+        .order_by(MeetingEvent.start.asc())
+    )
+    upcoming_invitations_count = upcoming_invitations_query.count()
+    upcoming_invitations = upcoming_invitations_query.limit(6).all()
+
+    upcoming_polls_query = (
+        MeetingPoll.query
+        .join(meeting_poll_participant_assoc,
+              MeetingPoll.id == meeting_poll_participant_assoc.c.poll_id)
+        .filter(
+            meeting_poll_participant_assoc.c.staff_id == user.id,
+            or_(MeetingPoll.start_vote >= now, MeetingPoll.close_vote > now),
+        )
+        .order_by(MeetingPoll.close_vote.asc())
+    )
+    upcoming_polls_count = upcoming_polls_query.count()
+    upcoming_polls = upcoming_polls_query.limit(6).all()
+
+    upcoming_events = (
+        RoomEvent.query
+        .options(joinedload(RoomEvent.room))
+        .join(event_participant_assoc, RoomEvent.id == event_participant_assoc.c.event_id)
+        .filter(
+            event_participant_assoc.c.staff_id == user.id,
+            RoomEvent.start >= now,
+            RoomEvent.cancelled_at.is_(None),
+        )
+        .order_by(RoomEvent.start.asc())
+        .limit(6)
+        .all()
+    )
+
+    upcoming_pre_registers = (
+        StaffSeminarPreRegister.query
+        .options(joinedload(StaffSeminarPreRegister.seminar))
+        .join(StaffSeminar, StaffSeminarPreRegister.seminar_id == StaffSeminar.id)
+        .filter(
+            StaffSeminarPreRegister.staff_account_id == user.id,
+            StaffSeminar.end_datetime >= now,
+        )
+        .order_by(StaffSeminar.start_datetime.asc())
+        .limit(6)
+        .all()
+    )
+    return {
+        'now': now,
+        'upcoming_events': upcoming_events,
+        'upcoming_invitations': upcoming_invitations,
+        'upcoming_invitations_count': upcoming_invitations_count,
+        'upcoming_polls': upcoming_polls,
+        'upcoming_polls_count': upcoming_polls_count,
+        'upcoming_pre_registers': upcoming_pre_registers,
+    }
+
+
+@app.route('/')
+def index():
+    now = datetime.now(tz=timezone('Asia/Bangkok'))
+    central_admin, assistant = get_homepage_role_flags(current_user)
+    return render_template(
+        'index.html',
+        assistant=assistant,
+        central_admin=central_admin,
+        now=now,
+    )
+
+
+@app.route('/home/dashboard')
+@login_required
+def home_dashboard():
+    now = datetime.now(tz=timezone('Asia/Bangkok'))
+    central_admin, assistant = get_homepage_role_flags(current_user)
+    context = get_homepage_dashboard_context(current_user, now)
+    context.update({
+        'assistant': assistant,
+        'central_admin': central_admin,
+    })
+    return render_template('partials/home_dashboard.html', **context)
 
 
 @app.route('/user-support')
 def user_support_index():
     return render_template('support.html')
-
-
-json_keyfile = requests.get(os.environ.get('JSON_KEYFILE')).json()
 
 
 from app.food import foodbp as food_blueprint
@@ -932,7 +1025,7 @@ from app.database import load_students
 def add_update_staff_finger_print_gsheet():
     sheetid = '13_wlcGpl5BWtCdqMi9WxXXJL_CfPnd5t54gCjA6mYtE'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("Sheet1")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -956,7 +1049,7 @@ def import_leave_data():
 
     sheetid = '1cM3T-kj1qgn24gZIUpOT3SGUQeIGhDdLdsCjgwj4Pgo'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("leave")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1024,7 +1117,7 @@ def import_procurement_data():
 
     sheetid = '165tgZytipxxy5jY2ZOY5EaBJwxt3ZVRDwaBqggqmccY'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wb = gc.open_by_key(sheetid)
     sheet = wb.worksheet("Data")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1061,7 +1154,7 @@ def import_procurement_data():
 def initialize_gdrive():
     gauth = GoogleAuth()
     scope = ['https://www.googleapis.com/auth/drive']
-    gauth.credentials = ServiceAccountCredentials.from_json_keyfile_dict(json_keyfile, scope)
+    gauth.credentials = ServiceAccountCredentials.from_json_keyfile_dict(get_json_keyfile(), scope)
     return GoogleDrive(gauth)
 
 
@@ -1071,7 +1164,7 @@ def initialize_gdrive():
 def import_procurement_image(index, limit):
     sheetid = '16A6yb_W-GcWRLbpqV-9cAnpqgh7nQsZogsNlzz_73ds'
     print('Authorizing with Google sheet..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("Asset")
     drive = initialize_gdrive()
@@ -1103,7 +1196,7 @@ def import_procurement_image(index, limit):
 def add_update_staff_gsheet():
     sheetid = '17lUlFNYk5znYqXL1vVCmZFtgTcjGvlNRZIlaDaEhy5E'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("index")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1153,7 +1246,7 @@ def update_leave_used_leave_quota():
 def update_remaining_leave_quota():
     sheetid = '17lUlFNYk5znYqXL1vVCmZFtgTcjGvlNRZIlaDaEhy5E'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("remain2021")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1180,7 +1273,7 @@ def update_remaining_leave_quota():
 def update_approver_gsheet():
     sheetid = '17lUlFNYk5znYqXL1vVCmZFtgTcjGvlNRZIlaDaEhy5E'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("approver")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1209,7 +1302,7 @@ def update_approver_gsheet():
 def import_province():
     sheetid = '1FnUHT8eoEJBz35HXz4gdq9DruyNU1lfsO74O1d0YRQE'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("Province")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1234,7 +1327,7 @@ def import_province():
 def import_district():
     sheetid = '1FnUHT8eoEJBz35HXz4gdq9DruyNU1lfsO74O1d0YRQE'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("District")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1262,7 +1355,7 @@ def import_district():
 def import_subdistrict():
     sheetid = '1FnUHT8eoEJBz35HXz4gdq9DruyNU1lfsO74O1d0YRQE'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("Subdistrict")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1726,7 +1819,7 @@ def import_seminar_data():
     tz = timezone('Asia/Bangkok')
     sheetid = '1GzNUS14c6dkUNh1Xz5cis1IXlPGtZTlGHgeU_3HS7HQ'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("seminar")
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1761,7 +1854,7 @@ def import_seminar_attend_data():
     tz = timezone('Asia/Bangkok')
     sheetid = '1GzNUS14c6dkUNh1Xz5cis1IXlPGtZTlGHgeU_3HS7HQ'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet("attend")
     df = pandas.DataFrame(sheet.get_all_records())
