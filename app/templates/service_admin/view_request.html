@@ -218,17 +218,17 @@
                                 <li>วันที่ขอ : {{ service_request.created_at.strftime('%d/%m/%Y') }}</li>
                             </ul>
                             <hr>
-                            <p class="menu-label">
-                                สถานะ
-                            </p>
-                            <ul class="menu-list">
-                                <li>
-                                    <span class="tag {{ service_request.status.admin_status_color }}">
-                                        {{ service_request.status.admin_status }}
-                                    </span>
-                                </li>
-                            </ul>
-                            <hr>
+{#                            <p class="menu-label">#}
+{#                                สถานะ#}
+{#                            </p>#}
+{#                            <ul class="menu-list">#}
+{#                                <li>#}
+{#                                    <span class="tag {{ service_request.status.admin_status_color }}">#}
+{#                                        {{ service_request.status.admin_status }}#}
+{#                                    </span>#}
+{#                                </li>#}
+{#                            </ul>#}
+{#                            <hr>#}
                             {% if service_request.results %}
                                 <p class="menu-label">
                                     ใบรายงานผล
