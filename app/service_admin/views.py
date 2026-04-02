@@ -4820,8 +4820,8 @@ def get_items():
 
     if trigger == 'province':
         form.district.query = form.province.data.districts
-        district = form.province.data.districts[0] if form.province.data.districts else ''
-        form.subdistrict.query = district.subdistricts if district else ''
+        # district = form.province.data.districts[0] if form.province.data.districts else ''
+        form.subdistrict.query = ''
     elif trigger == 'district' or trigger == 'subdistrict':
         form.district.query = form.province.data.districts
         form.subdistrict.query = form.district.data.subdistricts
