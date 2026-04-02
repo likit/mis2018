@@ -259,7 +259,6 @@
                                         <div class="control">
                                             <table id="timeline" class="table is-fullwidth is-striped">
                                                 <thead>
-                                                    <th>Sequence</th>
                                                     <th>Task</th>
                                                     <th>Issue</th>
                                                     <th>สถานะ</th>
@@ -270,9 +269,8 @@
                                                     <th></th>
                                                 </thead>
                                                 <tbody id="timelines">
-                                                    {% for timeline in detail.timelines|sort(attribute='sequence') %}
+                                                    {% for timeline in detail.timelines %}
                                                         <tr>
-                                                            <td>{{ timeline.sequence }}</td>
                                                             <td>{{ timeline.task }}</td>
                                                             <td>{{ timeline.issue.issue }}</td>
                                                             <td>
@@ -344,6 +342,7 @@
                                                     <th>Label</th>
                                                     <th>Detail</th>
                                                     <th>Status</th>
+                                                    <th>Staff</th>
                                                     <th>Created By</th>
                                                     <th>Created At</th>
                                                     <th>Updated By</th>
@@ -383,6 +382,7 @@
                                                             </span>
                                                         </a>
                                                     </td>
+                                                    <td>{{ issue.staff.fullname }}</td>
                                                     <td>{{ issue.creator.fullname }}</td>
                                                     <td>{{ issue.created_at|localdatetime }}</td>
                                                     <td>{{ issue.updater.fullname or '' }}</td>
@@ -443,7 +443,10 @@
     <script>
         $(document).ready(function () {
             $('#timeline').DataTable({
-                order: [[0, 'asc']],
+                order: [
+                    [4, 'asc'],
+                    [5, 'asc']
+                ],
                 lengthChange: false,
                 searching: false,
                 paging: false,
