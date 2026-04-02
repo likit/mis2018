@@ -94,6 +94,26 @@
                             </p>
                             <p><strong>รวมเป็นเงินทั้งสิ้น : </strong>{{ "{:,.2f}".format(invoice.grand_total) }}</p>
                         </div>
+                        <div class="field">
+                            <div class="buttons is-centered">
+                                {% if not invoice.paid_at %}
+                                    <a class="button is-info is-rounded is-small mb-2"
+                                       href="{{ url_for('academic_services.add_payment', invoice_id=invoice_id, menu=menu,
+                                                    tab=tab) }}"
+                                    >
+                                        <span class="icon"><i class="fas fa-plus"></i></span>
+                                        <span>อัปโหลดหลักฐานการชำระเงิน</span>
+                                    </a>
+                                {% endif %}
+                                <a class="button is-info is-outlined is-rounded is-small mb-2"
+                                   href="{{ url_for('academic_services.download_file', key=invoice.file,
+                                            download_filename=invoice.invoice_no ~ '.pdf') }}"
+                                >
+                                    <span class="icon"><i class="fas fa-download"></i></span>
+                                    <span>ดาวน์โหลดใบแจ้งหนี้</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="column is-one-quarter ">
@@ -116,43 +136,43 @@
                                     {{ invoice.due_date.strftime('%d/%m/%Y') }}
                                 </li>
                             </ul>
-                            <hr>
-{#                            <p class="menu-label">#}
-{#                                สถานะ#}
-{#                            </p>#}
-{#                            <ul class="menu-list">#}
-{#                                <li>#}
-{#                                    <span class="tag {{ invoice.customer_status_color }}">#}
-{#                                        {{ invoice.customer_status }}#}
-{#                                    </span>#}
-{#                                </li>#}
-{#                            </ul>#}
-{#                            <hr>#}
-                            <p class="menu-label">
-                                การดำเนินการ
-                            </p>
-                            <ul class="menu-list">
-                                {% if not invoice.paid_at %}
-                                    <li>
-                                        <a class="button is-info is-rounded is-fullwidth mb-2"
-                                           href="{{ url_for('academic_services.add_payment', invoice_id=invoice_id, menu=menu,
-                                                    tab=tab) }}"
-                                        >
-                                                <span class="icon"><i class="fas fa-plus"></i></span>
-                                                <span>อัปโหลดหลักฐานการชำระเงิน</span>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                <li>
-                                    <a class="button is-info is-outlined is-rounded is-small is-fullwidth"
-                                       href="{{ url_for('academic_services.download_file', key=invoice.file,
-                                            download_filename=invoice.invoice_no ~ '.pdf') }}"
-                                    >
-                                        <span class="icon"><i class="fas fa-download"></i></span>
-                                        <span>ดาวน์โหลดใบแจ้งหนี้</span>
-                                    </a>
-                                </li>
-                            </ul>
+                            {#                            <hr>#}
+                            {#                            <p class="menu-label">#}
+                            {#                                สถานะ#}
+                            {#                            </p>#}
+                            {#                            <ul class="menu-list">#}
+                            {#                                <li>#}
+                            {#                                    <span class="tag {{ invoice.customer_status_color }}">#}
+                            {#                                        {{ invoice.customer_status }}#}
+                            {#                                    </span>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
+                            {#                            <hr>#}
+                            {#                            <p class="menu-label">#}
+                            {#                                การดำเนินการ#}
+                            {#                            </p>#}
+                            {#                            <ul class="menu-list">#}
+                            {#                                {% if not invoice.paid_at %}#}
+                            {#                                    <li>#}
+                            {#                                        <a class="button is-info is-rounded is-fullwidth mb-2"#}
+                            {#                                           href="{{ url_for('academic_services.add_payment', invoice_id=invoice_id, menu=menu,#}
+                            {#                                                    tab=tab) }}"#}
+                            {#                                        >#}
+                            {#                                                <span class="icon"><i class="fas fa-plus"></i></span>#}
+                            {#                                                <span>อัปโหลดหลักฐานการชำระเงิน</span>#}
+                            {#                                        </a>#}
+                            {#                                    </li>#}
+                            {#                                {% endif %}#}
+                            {#                                <li>#}
+                            {#                                    <a class="button is-info is-outlined is-rounded is-small is-fullwidth"#}
+                            {#                                       href="{{ url_for('academic_services.download_file', key=invoice.file,#}
+                            {#                                            download_filename=invoice.invoice_no ~ '.pdf') }}"#}
+                            {#                                    >#}
+                            {#                                        <span class="icon"><i class="fas fa-download"></i></span>#}
+                            {#                                        <span>ดาวน์โหลดใบแจ้งหนี้</span>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
                         </aside>
                     </div>
                 </div>
