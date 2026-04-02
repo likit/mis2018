@@ -110,9 +110,7 @@
                                            href="{{ url_for('academic_services.confirm_quotation',
                                                quotation_id=quotation_id, menu='sample') }}"
                                         >
-                                                    <span class="icon">
-                                                        <i class="fas fa-check"></i>
-                                                    </span>
+                                            <span class="icon"><i class="fas fa-check"></i></span>
                                             <span>ยืนยัน</span>
                                         </a>
                                         <div id="reject-quotation"></div>
@@ -122,9 +120,7 @@
                                            hx-get="{{ url_for('academic_services.reject_quotation', quotation_id=quotation_id,
                                                    menu=menu, tab=tab) }}"
                                         >
-                                                    <span class="icon">
-                                                        <i class="fas fa-times"></i>
-                                                    </span>
+                                            <span class="icon"><i class="fas fa-times"></i></span>
                                             <span>ปฏิเสธ</span>
                                         </a>
                                     {% endif %}
@@ -143,8 +139,8 @@
                                     </a>
                                     <a class="Warn button is-rounded is-outlined is-small mb-2 has-text-danger"
                                     >
-                                            <span class="icon"><i class="fas fa-times"></i>
-                                            </span><span>ปฏิเสธ</span>
+                                        <span class="icon"><i class="fas fa-times"></i>
+                                        </span><span>ปฏิเสธ</span>
                                     </a>
                                     <a class="Warn button is-info is-outlined is-rounded is-small mb-2">
                                         <span class="icon"><i class="fas fa-download"></i></span>
