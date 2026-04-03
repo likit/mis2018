@@ -18,7 +18,7 @@
                     {% else %}
                         hx-post="{{ url_for('software_request.create_test_result', test_result_id=test_result_id) }}"
                     {% endif %}
-                    hx-target="#test_results"
+                    hx-target="#test-result-form"
                     hx-swap="beforeend"
                 >
                 <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
@@ -30,8 +30,8 @@
                     </div>
                     <div class="field">
                         <div class="control">
-                                {{ form.detail(class='textarea') }}
-                            </div>
+                            {{ form.detail(class='textarea') }}
+                        </div>
                     </div>
                     <div class="field ">
                         <div class="control">
