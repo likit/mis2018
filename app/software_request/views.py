@@ -504,7 +504,7 @@ def create_test_result(detail_id=None, test_result_id=None):
     if detail_id:
         form = SoftwareRequestTestResultForm()
     else:
-        test_result = SoftwareRequestTestResultForm.query.get(test_result_id)
+        test_result = SoftwareRequestTestResult.query.get(test_result_id)
         form = SoftwareRequestTestResultForm(obj=test_result)
     if form.validate_on_submit():
         if detail_id:
