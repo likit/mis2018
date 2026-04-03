@@ -206,3 +206,20 @@ class SoftwareIssues(db.Model):
             return 'is-success'
         else:
             return 'is-info'
+
+#
+class SoftwareRequestTestResult(db.Model):
+    __tablename__ = 'software_request_test_results'
+    id = db.Column('id', db.Integer(), primary_key=True, autoincrement=True)
+    detail = db.Column('detail', db.String(), nullable=False, info={'label': 'รายละเอียด'})
+    created_at = db.Column('created_at', db.DateTime(timezone=True))
+    updated_at = db.Column('updated_at', db.DateTime(timezone=True))
+    creator_id = db.Column('creator_id', db.ForeignKey('staff_account.id'))
+    creator = db.relationship(StaffAccount, backref=db.backref('created_test_results'), foreign_keys=[creator_id])
+    updater_id = db.Column('updater_id', db.ForeignKey('staff_account.id'))
+    updater = db.relationship(StaffAccount, backref=db.backref('updated_test_results'), foreign_keys=[updater_id])
+    request_id = db.Column('request_id', db.ForeignKey('software_request_details.id'))
+    request = db.relationship(SoftwareRequestDetail, backref=db.backref('test_results'))
+
+    def __str__(self):
+        return self.detail
