@@ -11,7 +11,8 @@ from flask import render_template, redirect, flash, url_for, jsonify, request, m
 from flask_login import login_required, current_user
 from app.roles import it_permission
 from app.software_request import software_request
-from app.software_request.forms import create_request_form,  create_timeline_form, SoftwareRequestIssueForm
+from app.software_request.forms import create_request_form, create_timeline_form, SoftwareRequestIssueForm, \
+    SoftwareRequestTestResultForm
 from app.software_request.models import *
 from werkzeug.utils import secure_filename
 from pydrive.auth import ServiceAccountCredentials, GoogleAuth
@@ -495,3 +496,48 @@ def create_issue(detail_id=None, issue_id=None):
         form.populate_obj(issue)
     return render_template('software_request/modal/create_issue_modal.html',
                            form=form, issue_id=issue_id, detail_id=detail_id)
+
+
+@software_request.route('/request/test_result/add/<int:detail_id>', methods=['GET', 'POST'])
+@software_request.route('/request/test_result/edit/<int:test_result_id>', methods=['GET', 'POST'])
+def create_test_result(detail_id=None, test_result_id=None):
+    if detail_id:
+        form = SoftwareRequestTestResultForm()
+    else:
+        test_result = SoftwareRequestTestResultForm.query.get(test_result_id)
+        form = SoftwareRequestTestResultForm(obj=test_result)
+    if form.validate_on_submit():
+        if detail_id:
+           test_result = SoftwareRequestTestResult()
+        form.populate_obj(test_result)
+        if detail_id:
+            test_result.request_id = detail_id
+            test_result.created_at = arrow.now('Asia/Bangkok').datetime
+            test_result.creator_id = current_user.id
+        else:
+            test_result.updated_at = arrow.now('Asia/Bangkok').datetime
+            test_result.updater_id = current_user.id
+        db.session.add(test_result)
+        db.session.commit()
+        if detail_id:
+            flash('บันทึกข้อมูลผลการทดสอบสำเร็จ', 'success')
+            resp = make_response(render_template('software_request/test_result_template.html', test_result=test_result))
+            resp.headers['HX-Trigger'] = 'closeModal'
+        else:
+            flash('อัพเดตข้อมูลผลการทดสอบสำเร็จ', 'success')
+            resp = make_response()
+            resp.headers['HX-Refresh'] = 'true'
+        return resp
+    return render_template('software_request/modal/create_test_result_modal.html', detail_id=detail_id,
+                           test_result_id=test_result_id, form=form)
+
+
+@software_request.route('/request/test_result/delete/<int:test_result_id>', methods=['GET', 'DELETE'])
+def delete_test_result(test_result_id):
+    test_result = SoftwareRequestTestResult.query.get(test_result_id)
+    db.session.delete(test_result)
+    db.session.commit()
+    flash('ลบผลการทดสอบสำเร็จ', 'success')
+    resp = make_response()
+    resp.headers['HX-Refresh'] = 'true'
+    return resp
