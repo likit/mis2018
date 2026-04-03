@@ -409,6 +409,34 @@
                         </div>
                         <div class="field is-horizontal">
                             <div class="field-label">
+                                <label class="label">บันทึกผลการทดสอบ</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    {% if detail.test_results %}
+                                        {% for test_result in detail.test_results %}
+                                            <article class="media">
+                                                <div class="media-content">
+                                                    <div class="content">
+                                                        <p>
+                                                            <strong>{{ test_result.creator.fullname }}</strong>
+                                                            -
+                                                            <small>{{ test_result.created_at|localdatetime }}</small>
+                                                            <br>
+                                                            {{ test_result.detail }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        {% endfor %}
+                                    {% else %}
+                                        <i>ยังไม่มีบันทึกผลการทดสอบ</i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label">
                                 <label class="label">Update ล่าสุด</label>
                             </div>
                             <div class="field-body">

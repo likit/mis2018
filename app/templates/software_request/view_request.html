@@ -147,7 +147,7 @@
                                             ไม่มีเอกสารแนบ
                                         {% endif %}
                                     </div>
-                                 </div>
+                                </div>
                             </div>
                         </div>
                         <div class="field is-horizontal">
@@ -280,44 +280,42 @@
                     </div>
                     <h5 class="title is-size-4">ข้อมูลผลการทดสอบ</h5>
                     <div class="box">
-                        {% if detail.test_results %}
-                            <div class="field">
-                                <div id="test_results">
-                                    {% for test_result in detail.test_results %}
-                                        <article class="media">
-                                            <div class="media-content">
-                                                <div class="content">
-                                                    <p>
-                                                        <strong>{{ test_result.creator.fullname }}</strong>
-                                                        -
-                                                        <small>{{ test_result.created_at|localdatetime }}</small>
-                                                        <br>
-                                                        {{ test_result.detail }}
-                                                        <br>
-                                                        <small>
-                                                            <a hx-swap="innerHTML"
-                                                               hx-target="#test-result-form"
-                                                               hx-get="{{ url_for('software_request.create_test_result',
+                        <div class="field">
+                            <div id="test_results">
+                                {% for test_result in detail.test_results %}
+                                    <article class="media">
+                                        <div class="media-content">
+                                            <div class="content">
+                                                <p>
+                                                    <strong>{{ test_result.creator.fullname }}</strong>
+                                                    -
+                                                    <small>{{ test_result.created_at|localdatetime }}</small>
+                                                    <br>
+                                                    {{ test_result.detail }}
+                                                    <br>
+                                                    <small>
+                                                        <a hx-swap="innerHTML"
+                                                           hx-target="#test-result-form"
+                                                           hx-get="{{ url_for('software_request.create_test_result',
                                                                test_result_id=test_result.id) }}"
-                                                            >
-                                                                แก้ไข
-                                                            </a> ·
-                                                            <a hx-delete="{{ url_for('software_request.delete_test_result',
+                                                        >
+                                                            แก้ไข
+                                                        </a> ·
+                                                        <a hx-delete="{{ url_for('software_request.delete_test_result',
                                                             test_result_id=test_result.id) }}"
-                                                               hx-headers='{"X-CSRF-Token": {{ csrf_token()|tojson|safe }} }'
-                                                               hx-confirm="ท่านต้องการลบรายการนี้หรือไม่"
-                                                            >
-                                                                ลบ
-                                                            </a>
-                                                        </small>
-                                                    </p>
-                                                </div>
+                                                           hx-headers='{"X-CSRF-Token": {{ csrf_token()|tojson|safe }} }'
+                                                           hx-confirm="ท่านต้องการลบรายการนี้หรือไม่"
+                                                        >
+                                                            ลบ
+                                                        </a>
+                                                    </small>
+                                                </p>
                                             </div>
-                                        </article>
-                                    {% endfor %}
-                                </div>
+                                        </div>
+                                    </article>
+                                {% endfor %}
                             </div>
-                        {% endif %}
+                        </div>
                         <div id="test-result-form"></div>
                         <a class='button is-link is-rounded'
                            hx-swap="innerHTML"
