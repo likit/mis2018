@@ -292,10 +292,21 @@ def admin_index():
     admins = ComplaintAdmin.query.filter_by(admin=current_user)
     coordinators = ComplaintCoordinator.query.filter_by(coordinator=current_user)
     records = []
+    new_record_count = 0
+    pending_record_count = 0
+    progress_record_count = 0
 
     for admin in admins:
         if admin.investigators:
             for investigator in admin.investigators:
+
+                if investigator.record.status is None:
+                    new_record_count += 1
+                elif investigator.record.status.code == 'pending':
+                    pending_record_count += 1
+                elif investigator.record.status.code == 'progress':
+                    progress_record_count += 1
+
                 if tab == 'new' and investigator.record.status is None:
                     records.append(investigator.record)
                 else:
@@ -305,6 +316,13 @@ def admin_index():
 
         if admin.topic.records:
             for record in admin.topic.records:
+                if record.status is None:
+                    new_record_count += 1
+                elif record.status.code == 'pending':
+                    pending_record_count += 1
+                elif record.status.code == 'progress':
+                    progress_record_count += 1
+
                 if tab == 'new' and record.status is None:
                     records.append(record)
                 else:
@@ -312,13 +330,22 @@ def admin_index():
                     if rec:
                         records.append(rec)
     for c in coordinators:
+        if c.record.status is None:
+            new_record_count += 1
+        elif c.record.status.code == 'pending':
+            pending_record_count += 1
+        elif c.record.status.code == 'progress':
+            progress_record_count += 1
+
         if tab == 'new' and c.record.status is None:
             records.append(c.record)
         else:
             rec = c.get_record_by_status(tab)
             if rec:
                 records.append(rec)
-    return render_template('complaint_tracker/admin_index.html', records=records, tab=tab)
+    return render_template('complaint_tracker/admin_index.html', records=records, tab=tab,
+                           new_record_count=new_record_count, pending_record_count=pending_record_count,
+                           progress_record_count=progress_record_count)
 
 
 @complaint_tracker.route('/topics/<code>')
