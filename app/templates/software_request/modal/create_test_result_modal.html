@@ -18,7 +18,7 @@
                     {% else %}
                         hx-post="{{ url_for('software_request.create_test_result', test_result_id=test_result_id) }}"
                     {% endif %}
-                    hx-target="#test-result-form"
+                    hx-target="#test_results"
                     hx-swap="beforeend"
                 >
                 <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
