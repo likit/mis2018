@@ -12,6 +12,7 @@
                     <a hx-swap="innerHTML"
                        hx-target="#test-result-form"
                        hx-get="{{ url_for('software_request.create_test_result', test_result_id=test_result.id) }}"
+                    >
                         แก้ไข
                     </a> ·
                     <a hx-delete="{{ url_for('software_request.delete_test_result', test_result_id=test_result.id) }}"
