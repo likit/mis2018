@@ -215,6 +215,7 @@ class ComplaintRecord(db.Model):
                 return self
         return None
 
+    @property
     def get_print_of_repair_approval(self):
         if self.repair_approvals:
             for repair_approval in self.repair_approvals:
