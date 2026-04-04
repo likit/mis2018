@@ -47,7 +47,7 @@ complaint_record_tag_assoc = db.Table('complaint_record_tag_assoc',
 class ComplaintCategory(db.Model):
     __tablename__ = 'complaint_categories'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    no = db.Column('no', db.Integer)
+    no = db.Column('no', db.Integer())
     category = db.Column('category', db.String(255), nullable=False)
 
     def __str__(self):

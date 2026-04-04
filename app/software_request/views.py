@@ -519,12 +519,31 @@ def create_test_result(detail_id=None, test_result_id=None):
             test_result.updater_id = current_user.id
         db.session.add(test_result)
         db.session.commit()
+        scheme = 'http' if current_app.debug else 'https'
+        link = url_for("software_request.update_request", detail_id=test_result.request_id, _external=True,
+                       _scheme=scheme)
         if detail_id:
             flash('บันทึกข้อมูลผลการทดสอบสำเร็จ', 'success')
+            if test_result.request.staffs:
+                title = f'''แจ้งผลการทดสอบระบบ{test_result.request.title}'''
+                message = f'''ทดสอบระบบ{test_result.request.title}เสร็จเรียบร้อยแล้ว โดยมีรายละเอียดดังนี้ {test_result.detail}\n'''
+                message += f'''ท่านสามารถดูรายละเอียดเพิ่มเติมได้ที่ลิงก์ด้านล่าง\n'''
+                message += f'''{link}\n\n'''
+                message += f'''ระบบขอรับบริการพัฒนา Software\n'''
+                message += f'''คณะเทคนิคการแพทย์'''
+                send_mail([staff.email + '@mahidol.ac.th' for staff in test_result.request.staffs], title, message)
             resp = make_response(render_template('software_request/test_result_template.html', test_result=test_result))
             resp.headers['HX-Trigger'] = 'closeModal'
         else:
             flash('อัพเดตข้อมูลผลการทดสอบสำเร็จ', 'success')
+            if test_result.request.staffs:
+                title = f'''แจ้งแก้ไขผลการทดสอบระบบ{test_result.request.title}'''
+                message = f'''มีการแก้ไขผลการทดสอบระบบ{test_result.request.title} โดยมีรายละเอียดดังนี้ {test_result.detail}\n'''
+                message += f'''ท่านสามารถดูรายละเอียดเพิ่มเติมได้ที่ลิงก์ด้านล่าง\n'''
+                message += f'''{link}\n\n'''
+                message += f'''ระบบขอรับบริการพัฒนา Software\n'''
+                message += f'''คณะเทคนิคการแพทย์'''
+                send_mail([staff.email + '@mahidol.ac.th' for staff in test_result.request.staffs], title, message)
             resp = make_response()
             resp.headers['HX-Refresh'] = 'true'
         return resp
