@@ -215,6 +215,16 @@ class ComplaintRecord(db.Model):
                 return self
         return None
 
+    def get_print_of_repair_approval(self):
+        if self.repair_approvals:
+            for repair_approval in self.repair_approvals:
+                if repair_approval.is_print:
+                    return True
+                else:
+                    return False
+        else:
+            return False
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -361,6 +371,7 @@ class ComplaintRepairApproval(db.Model):
     product_code = db.relationship(ProductCode, backref=db.backref('repair_approvals'))
     remark = db.Column('remark', db.Text())
     loan_no = db.Column('loan_no', db.String(), info={'label': 'เลขที่ใบยืม'})
+    is_print = db.Column('is_print', db.Boolean(), default=False)
     created_at = db.Column('created_at', db.DateTime(timezone=True), info={'label': 'วันที่'})
     updated_at = db.Column('updated_at', db.DateTime(timezone=True))
     creator_id = db.Column('creator_id', db.ForeignKey('staff_account.id'))
