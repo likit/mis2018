@@ -132,7 +132,7 @@ def index():
 
 
 @complaint_tracker.route('/issue/<int:topic_id>', methods=['GET', 'POST'])
-def new_record(topic_id, room=None, procurement=None):
+def dnew_recor(topic_id, room=None, procurement=None):
     topic = ComplaintTopic.query.get(topic_id)
     ComplaintRecordForm = create_record_form(record_id=None, topic_id=topic_id)
     form = ComplaintRecordForm()
@@ -154,6 +154,11 @@ def new_record(topic_id, room=None, procurement=None):
         file = form.file_upload.data
         record.topic = topic
         record.created_at = arrow.now('Asia/Bangkok').datetime
+        if (topic.code == 'runied' and procurement and
+                (not form.cost_center.data or not form.io_code.data or not form.product_code.data)):
+            flash('กรุณากรอกข้อมูลให้ครบถ้วน', 'danger')
+            return render_template('complaint_tracker/record_form.html', form=form, topic=topic, room=room,
+                                   is_admin=is_admin, procurement=procurement)
         if current_user.is_authenticated:
             record.complainant = current_user
         if file and allowed_file(file.filename):
