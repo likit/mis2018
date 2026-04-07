@@ -1145,8 +1145,9 @@ def generate_repair_approval_pdf(repair_approval):
             'เล่มที่ {book_number} เลขที่ {receipt_number} วันที่ {receipt_date} ทั้งนี้ ข้าพเจ้าพร้อมหัวหน้าหน่วยงานได้ลงนามรับรองในใบส่ง'
             'ของหรือใบเสร็จรับเงินว่า “ได้ตรวจรับพัสดุไว้ถูกต้องครบถ้วนแล้ว”'
             .format(price=formatted_price, price_thai=price_thai, supplier=repair_approval.supplier,
-                    book_number=repair_approval.book_number, receipt_number=repair_approval.receipt_number,
-                    receipt_date=receipt_date))
+                    book_number=repair_approval.book_number if repair_approval.book_number else '&nbsp;&nbsp;&nbsp;&nbsp;'
+                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
+                    receipt_number=repair_approval.receipt_number, receipt_date=receipt_date))
 
         receipt = (
             '<para leftIndent=35><font name="SarabunBold">4. โดยขอเบิกจ่ายจากเงิน</font> {purchase_type} ประจำปีงบประมาณ {budget_year} </para>'
