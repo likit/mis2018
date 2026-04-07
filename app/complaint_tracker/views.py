@@ -833,32 +833,63 @@ def repair_approval(record_id, repair_approval_id=None):
         form = ComplaintRepairApprovalForm(obj=rep_approval)
     else:
         form = ComplaintRepairApprovalForm()
+
     org = Org.query.filter_by(name=current_user.personal_info.org.name).first()
     staff = StaffAccount.query.filter_by(email=org.head).first()
     form.name.data = staff.fullname
     form.position.data = f"หัวหน้า{staff.personal_info.org.name}"
+
+    if not form.cost_center.data and record.cost_center:
+        form.cost_center.data = record.cost_center
+
+    if not form.io_code.data and record.io_code:
+        form.io_code.data = record.io_code
+
+    if not form.product_code.data and record.product_code:
+        form.product_code.data = record.product_code
+
     if staff.personal_info.org.parent and staff.personal_info.org.parent.parent:
         form.organization.data = f'{staff.personal_info.org.name} {staff.personal_info.org.parent} {staff.personal_info.org.parent.parent}'
     elif staff.personal_info.org.parent and not staff.personal_info.org.parent.parent:
         form.organization.data = f'{staff.personal_info.org.name} {staff.personal_info.org.parent}'
     else:
         form.organization.data = staff.personal_info.org.name
+
     if record.procurements and not form.item.data:
         for procurement in record.procurements:
             form.item.data = f'เลขครุภัณฑ์ {procurement.procurement_no} {procurement.name}'
+
     if form.validate_on_submit():
         if not repair_approval_id:
             rep_approval = ComplaintRepairApproval()
         form.populate_obj(rep_approval)
+
+        if not form.repair_type.data:
+            flash('กรุณาเลือกประเภทใบอนุมัติหลักการซ่อม', 'danger')
+            return render_template('complaint_tracker/repair_approval_form.html', form=form,
+                                   record_id=record_id, repair_approval_id=repair_approval_id)
+        elif form.repair_type.data == 'ไม่เร่งด่วน (ซื้อ/จ้าง)' and not form.principle_approval_type.data:
+            flash('กรุณาเลือกประเภทการขออนุมัติ', 'danger')
+            return render_template('complaint_tracker/repair_approval_form.html', form=form,
+                                   record_id=record_id, repair_approval_id=repair_approval_id)
+
         rep_approval.receipt_date = arrow.get(form.receipt_date.data,
                                               'Asia/Bangkok').date() if form.receipt_date.data else None
         if not repair_approval_id:
             rep_approval.record_id = record_id
             rep_approval.created_at = arrow.now('Asia/Bangkok').datetime
             rep_approval.creator_id = current_user.id
-        if form.repair_type.data != 'เร่งด่วน':
+        if form.repair_type.data == 'เร่งด่วน':
+            rep_approval.principle_approval_type = None
+            rep_approval.purpose = None
+        else:
             rep_approval.name = None
             rep_approval.position = None
+            rep_approval.book_number = None
+            rep_approval.receipt_number = None
+            rep_approval.receipt_date = None
+            rep_approval.supplier = None
+            rep_approval.loan_no = None
         db.session.add(rep_approval)
         db.session.commit()
         if rep_approval.repair_type == 'เร่งด่วน':
@@ -869,7 +900,8 @@ def repair_approval(record_id, repair_approval_id=None):
     else:
         for er in form.errors:
             flash("{} {}".format(er, form.errors[er]), 'danger')
-    return render_template('complaint_tracker/repair_approval_form.html', form=form, record_id=record_id)
+    return render_template('complaint_tracker/repair_approval_form.html', form=form, record_id=record_id,
+                           repair_approval_id=repair_approval_id)
 
 
 @complaint_tracker.route('/admin/repair-approval/committee/add/<int:repair_approval_id>', methods=['GET', 'POST'])
