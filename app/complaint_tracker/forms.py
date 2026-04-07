@@ -68,6 +68,12 @@ def create_record_form(record_id, topic_id):
                                                     allow_blank=True, blank_text='กรุณาเลือกสถานที่ตั้งครุภัณฑ์ปัจจุบัน')
         room = QuerySelectField('ห้อง', query_factory=lambda: RoomResource.query.order_by(RoomResource.number.asc()),
                                                     allow_blank=True, blank_text='กรุณาเลือกห้อง')
+        cost_center = QuerySelectField(query_factory=lambda: CostCenter.query.all(), get_label='id',
+                                               allow_blank=True, blank_text='กรุณาเลือกรหัสศูนย์ต้นทุน')
+        io_code = QuerySelectField(query_factory=lambda: IOCode.query.all(), get_label='id', allow_blank=True,
+                                           blank_text='กรุณาเลือกรหัสใบสั่งงานภายใน')
+        product_code = QuerySelectField(query_factory=lambda: ProductCode.query.all(), get_label='product_code',
+                                                allow_blank=True, blank_text='กรุณาเลือกผลผลิต')
         file_upload = FileField('File Upload')
     return ComplaintRecordForm
 
@@ -103,6 +109,7 @@ class QuerySelectFieldRequired(QuerySelectField):
         if valuelist and valuelist[0] == '':
             valuelist = ['__None']
         return super().process_formdata(valuelist)
+
 
 class ComplaintRepairApprovalForm(ModelForm):
     class Meta:
