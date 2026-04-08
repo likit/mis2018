@@ -490,31 +490,6 @@
         })
     </script>
     <script>
-        function removeProductTypeOptions() {
-            const productType = document.getElementById('product_type');
-            const subforms = document.querySelectorAll('.subform-card');
-            for (let i = productType.options.length - 1; i >= 0; i--) {
-                const option = productType.options[i];
-                if (option.value === '') continue;
-                subforms.forEach(subform => {
-                    const subformId = subform.id.split(/[\s_]+/)[0];
-                    if (option.value === subformId) {
-                        option.remove();
-                    }
-                });
-            }
-            productType.selectedIndex = 0;
-        }
-
-        document.addEventListener('DOMContentLoaded', removeProductTypeOptions);
-
-        document.body.addEventListener('htmx:afterSwap', function (evt) {
-            if (evt.target.id === 'condition-fields') {
-                removeProductTypeOptions();
-            }
-        });
-    </script>
-    <script>
         function validateProductType() {
             const product_type = document.getElementById('product_type');
             const subforms = document.querySelector('.subform-card');
@@ -540,32 +515,9 @@
     <script>
         document.addEventListener('click', function (e) {
             const productType = document.getElementById('product_type');
-            if (e.target.classList.contains('remove-subform')) {
-                const card = e.target.closest('.subform-card');
-                const requestId = e.target.dataset.requestId;
-                const text = card.querySelector('label').textContent.trim();
-                if (!requestId) {
-                    card.remove();
-                    e.preventDefault();
-                }
-                const subformId = e.target.id.split(/[\s_]+/)[0];
-
-                let hasOptions = false;
-                for (let i = 0; i < productType.options.length; i++) {
-                    if (productType.options[i].value === subformId) {
-                        hasOptions = true;
-                        break;
-                    }
-                }
-
-                if (hasOptions == false) {
-                    const option = document.createElement('option');
-                    option.value = subformId;
-                    option.text = text;
-                    productType.appendChild(option);
-                }
+            if (productType) {
+                productType.selectedIndex = 0;
             }
-            productType.selectedIndex = 0;
         });
     </script>
     <script>
