@@ -1525,15 +1525,17 @@ def get_virus_disinfection_condition_form():
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()
     fields = entry_fields[-1]
+    index = fields.id.replace(f"{field_name}-", "")
     return render_template('academic_services/partials/virus_disinfection_request_condition_form.html',
-                           fields=fields, product_type=product_type)
+                           index=index, fields=fields, product_type=product_type)
 
 
 @academic_services.route('/request/virus_liquid_organism_form_entry/add', methods=['POST'])
 def add_virus_liquid_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.liquid_condition_field.liquid_organism_fields.append_entry()
-    item_form = form.liquid_condition_field.liquid_organism_fields[-1]
+    form.liquid_condition_field[index].liquid_organism_fields.append_entry()
+    item_form = form.liquid_condition_field[index].liquid_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1557,7 +1559,8 @@ def add_virus_liquid_organism_form_entry():
                            item_form.liquid_time_duration(class_='input', required=True,
                                                           oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                           oninput="this.setCustomValidity('')"),
-                           url_for('academic_services.remove_virus_liquid_organism_form_entry', name=item_form.name)
+                           url_for('academic_services.remove_virus_liquid_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1565,24 +1568,27 @@ def add_virus_liquid_organism_form_entry():
 
 @academic_services.route('/request/virus_liquid_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_liquid_organism_form_entry():
+    index = request.args.get("index", type=int)
+    print('i', index)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.liquid_condition_field.liquid_organism_fields:
+    for entry in form.liquid_condition_field[index].liquid_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.liquid_condition_field.liquid_organism_fields) > 0:
-        form.liquid_condition_field.liquid_organism_fields.pop_entry()
+    while len(form.liquid_condition_field[index].liquid_organism_fields) > 0:
+        form.liquid_condition_field[index].liquid_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.liquid_condition_field.liquid_organism_fields.append_entry(entry)
+        form.liquid_condition_field[index].liquid_organism_fields.append_entry(entry)
     return ""
 
 
 @academic_services.route('/request/virus_spray_organism_form_entry/add', methods=['POST'])
 def add_virus_spray_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.spray_condition_field.spray_organism_fields.append_entry()
-    item_form = form.spray_condition_field.spray_organism_fields[-1]
+    form.spray_condition_field[index].spray_organism_fields.append_entry()
+    item_form = form.spray_condition_field[index].spray_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1614,7 +1620,8 @@ def add_virus_spray_organism_form_entry():
                            item_form.spray_time_duration(class_='input', required=True,
                                                          oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                          oninput="this.setCustomValidity('')"),
-                           url_for('academic_services.remove_virus_spray_organism_form_entry', name=item_form.name)
+                           url_for('academic_services.remove_virus_spray_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1622,24 +1629,26 @@ def add_virus_spray_organism_form_entry():
 
 @academic_services.route('/request/virus_spray_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_spray_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.spray_condition_field.spray_organism_fields:
+    for entry in form.spray_condition_field[index].spray_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.spray_condition_field.spray_organism_fields) > 0:
-        form.spray_condition_field.spray_organism_fields.pop_entry()
+    while len(form.spray_condition_field[index].spray_organism_fields) > 0:
+        form.spray_condition_field[index].spray_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.spray_condition_field.spray_organism_fields.append_entry(entry)
+        form.spray_condition_field[index].spray_organism_fields.append_entry(entry)
     return ""
 
 
 @academic_services.route('/request/virus_coat_organism_form_entry/add', methods=['POST'])
 def add_virus_coat_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.coat_condition_field.coat_organism_fields.append_entry()
-    item_form = form.coat_condition_field.coat_organism_fields[-1]
+    form.coat_condition_field[index].coat_organism_fields.append_entry()
+    item_form = form.coat_condition_field[index].coat_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1659,7 +1668,8 @@ def add_virus_coat_organism_form_entry():
     """
     resp = template.format(item_form.coat_organism(),
                            item_form.coat_time_duration(class_='input'),
-                           url_for('academic_services.remove_virus_coat_organism_form_entry', name=item_form.name)
+                           url_for('academic_services.remove_virus_coat_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1667,16 +1677,17 @@ def add_virus_coat_organism_form_entry():
 
 @academic_services.route('/request/virus_coat_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_coat_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.coat_condition_field.coat_organism_fields:
+    for entry in form.coat_condition_field[index].coat_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.coat_condition_field.coat_organism_fields) > 0:
-        form.coat_condition_field.coat_organism_fields.pop_entry()
+    while len(form.coat_condition_field[index].coat_organism_fields) > 0:
+        form.coat_condition_field[index].coat_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.coat_condition_field.coat_organism_fields.append_entry(entry)
+        form.coat_condition_field[index].coat_organism_fields.append_entry(entry)
     return ""
 
 
