@@ -572,11 +572,6 @@ class VirusDisinfectionRequestForm(FlaskForm):
                                          "oninvalid": "this.setCustomValidity('กรุณากรอกสารสำคัญที่ออกฤทธิ์ และปริมาณสารสำคัญ')",
                                          "oninput": "this.setCustomValidity('')"
                                      })
-    # product_appearance = StringField('ลักษณะทางกายภาพของผลิตภัณฑ์', validators=[DataRequired()],
-    #                                  render_kw={
-    #                                      "oninvalid": "this.setCustomValidity('กรุณากรอกลักษณะทางกายภาพของผลิตภัณฑ์')",
-    #                                      "oninput": "this.setCustomValidity('')"
-    #                                  })
     product_appearance = SelectField('ลักษณะทางกายภาพของผลิตภัณฑ์',
                                   choices=[('', 'กรุณาเลือกลักษณะทางกายภาพของผลิตภัณฑ์'),
                                            ('ของเหลว', 'ของเหลว'),
@@ -670,10 +665,11 @@ class VirusDisinfectionRequestForm(FlaskForm):
             "oninput": "this.setCustomValidity('')"
         }
     )
-    liquid_condition_field = FormField(VirusLiquidConditionForm,
-                                       'ผลิตภัณฑ์ฆ่าเชื้อชนิดของเหลว ชนิดผง หรือชนิดเม็ดที่ละลายน้ำได้')
-    spray_condition_field = FormField(VirusSprayConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อชนิดฉีดพ่น')
-    coat_condition_field = FormField(VirusCoatConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อที่เคลือบบนพื้นผิวสำเร็จรูป')
+    liquid_condition_field = FieldList(FormField(VirusLiquidConditionForm,
+                                                 'ผลิตภัณฑ์ฆ่าเชื้อชนิดของเหลว ชนิดผง หรือชนิดเม็ดที่ละลายน้ำได้'),
+                                       min_entries=0)
+    spray_condition_field = FieldList(FormField(VirusSprayConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อชนิดฉีดพ่น'), min_entries=0)
+    coat_condition_field = FieldList(FormField(VirusCoatConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อที่เคลือบบนพื้นผิวสำเร็จรูป'), min_entries=0)
 
 
 class VirusSurfaceDisinfectionTestConditionForm(FlaskForm):
