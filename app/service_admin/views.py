@@ -1509,9 +1509,10 @@ def create_virus_air_disinfection_request(request_id=None):
 
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/add', methods=['POST'])
 def add_virus_surface_disinfection_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusAirDisinfectionRequestForm()
-    form.surface_disinfection_condition_field.surface_disinfection_organism_fields.append_entry()
-    item_form = form.surface_disinfection_condition_field.surface_disinfection_organism_fields[-1]
+    form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry()
+    item_form = form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1534,7 +1535,7 @@ def add_virus_surface_disinfection_organism_form_entry():
                                                                       oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                                       oninput="this.setCustomValidity('')"),
                            url_for('service_admin.remove_virus_surface_disinfection_organism_form_entry',
-                                   name=item_form.name)
+                                   index=index, name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1542,16 +1543,17 @@ def add_virus_surface_disinfection_organism_form_entry():
 
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_surface_disinfection_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusAirDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.surface_disinfection_condition_field.surface_disinfection_organism_fields:
+    for entry in form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.surface_disinfection_condition_field.surface_disinfection_organism_fields) > 0:
-        form.surface_disinfection_condition_field.surface_disinfection_organism_fields.pop_entry()
+    while len(form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields) > 0:
+        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.surface_disinfection_condition_field.surface_disinfection_organism_fields.append_entry(entry)
+        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry(entry)
     return ""
 
 
