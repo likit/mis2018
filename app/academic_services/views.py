@@ -1522,7 +1522,9 @@ def get_virus_disinfection_condition_form():
         return ''
     form = VirusDisinfectionRequestForm()
     field_name = f"{product_type}_condition_field"
-    fields = getattr(form, field_name)
+    entry_fields = getattr(form, field_name)
+    entry_fields.append_entry()
+    fields = entry_fields[-1]
     return render_template('academic_services/partials/virus_disinfection_request_condition_form.html',
                            fields=fields, product_type=product_type)
 
