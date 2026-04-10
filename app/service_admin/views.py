@@ -680,6 +680,13 @@ def index():
     return render_template('service_admin/index.html')
 
 
+@service_admin.route('/service_guide')
+def service_guide_index():
+    labs = ServiceLab.query.join(ServiceSubLab).join(ServiceAdmin).filter(
+        ServiceAdmin.admin_id == current_user.id)
+    return render_template('service_admin/service_guide_index.html', labs=labs)
+
+
 @service_admin.context_processor
 def menu():
     admin = False
