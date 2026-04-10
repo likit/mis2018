@@ -540,7 +540,10 @@
                     alert('กรุณาตรวจสอบวันเริ่มและสิ้นสุดอีกครั้ง')
                     $(this).val('')
                     return
+                } else if (startDateTime.format(DATE_FORMAT) != endDateTime.format(DATE_FORMAT)) {
+                    $('input[name="end"]').data('daterangepicker').setStartDate(startDateTime.add(3, 'hours'))
                 }
+
                 clearAvailabilityStatus('#' + $(this).attr('id'))
                 triggerAvailabilityCheck()
             })
