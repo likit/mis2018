@@ -21,6 +21,14 @@ class PasswordOfSignDigitalForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
 
 
+class ServiceLabForm(ModelForm):
+    class Meta:
+        model = ServiceLab
+
+    service_manual_file = FileField('File Upload')
+    service_rate_file = FileField('File Upload')
+
+
 class ServiceCustomerContactForm(ModelForm):
     class Meta:
         model = ServiceCustomerContact
