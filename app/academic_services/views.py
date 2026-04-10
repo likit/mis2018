@@ -895,7 +895,13 @@ def detail_lab_index():
     cat = request.args.get('cat')
     code = request.args.get('code')
     labs = ServiceLab.query.filter_by(code=code)
-    return render_template('academic_services/detail_lab_index.html', cat=cat, labs=labs, code=code)
+    service_manual_url = None
+    service_rate_url = None
+    for lab in labs:
+        service_manual_url = generate_url(lab.service_manual) if lab.service_manual else None
+        service_rate_url = generate_url(lab.service_rate) if lab.service_rate else None
+    return render_template('academic_services/detail_lab_index.html', cat=cat, labs=labs, code=code,
+                           service_manual_url=service_manual_url, service_rate_url=service_rate_url)
 
 
 @academic_services.route('/page/pdpa')
