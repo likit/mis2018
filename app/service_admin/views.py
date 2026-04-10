@@ -687,6 +687,49 @@ def service_guide_index():
     return render_template('service_admin/service_guide_index.html', labs=labs)
 
 
+@service_admin.route('/service_guide/update/<int:lab_id>', methods=['GET', 'POST'])
+def update_service_guide(lab_id):
+    lab = ServiceLab.query.get(lab_id)
+    form = ServiceLabForm(obj=lab)
+    if form.validate_on_submit():
+        form.populate_obj(lab)
+        service_manual_file = request.files.get('service_manual_file')
+        service_rate_file = request.files.get('service_rate_file')
+
+        if service_manual_file and allowed_file(service_manual_file.filename):
+            mime_type = service_manual_file.mimetype
+            file_name = '{}.{}'.format(f'คู่มือการใช้บริการ{lab.lab}', service_manual_file.filename.split('.')[-1])
+            file_data = service_manual_file.stream.read()
+            response = s3.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=file_name,
+                Body=file_data,
+                ContentType=mime_type
+            )
+            lab.service_manual = file_name
+        if service_rate_file and allowed_file(service_rate_file.filename):
+            mime_type = service_rate_file.mimetype
+            file_name = '{}.{}'.format(f'อัตราค่าบริการ{lab.lab}', service_rate_file.filename.split('.')[-1])
+            file_data = service_rate_file.stream.read()
+            response = s3.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=file_name,
+                Body=file_data,
+                ContentType=mime_type
+            )
+            lab.service_rate = file_name
+        lab.updater_id = current_user.id
+        lab.updated_at = arrow.now('Asia/Bangkok').datetime
+        db.session.add(lab)
+        db.session.commit()
+        flash('อัปเดตข้อมูลสำเร็จ', 'success')
+        return redirect(url_for('service_admin.service_guide_index'))
+    else:
+        for field, error in form.errors.items():
+            flash(f'{field}: {error}', 'danger')
+    return render_template('service_admin/update_service_guide.html', form=form, lab=lab)
+
+
 @service_admin.context_processor
 def menu():
     admin = False
