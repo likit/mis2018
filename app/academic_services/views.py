@@ -1523,12 +1523,12 @@ def get_product_storage():
     return resp
 
 
-@academic_services.route('/request/virus_disinfection/condition')
+@academic_services.route('/request/virus_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_disinfection_condition_form():
-    product_type = request.args.get("product_type")
+    product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    form = VirusDisinfectionRequestForm()
+    form = VirusDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()
@@ -1735,12 +1735,16 @@ def create_virus_air_disinfection_request(request_id=None):
                            sub_lab=sub_lab,
                            form=form, menu=menu, request_id=request_id)
 
-@academic_services.route('/request/virus_air_disinfection/condition')
+
+@academic_services.route('/request/virus_air_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_air_disinfection_condition_form():
-    product_type = request.args.get("product_type")
+    # Support both GET (query string) and POST (htmx form submit).
+    product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    form = VirusAirDisinfectionRequestForm()
+    # When called via POST, request.form contains the existing FieldList inputs,
+    # allowing WTForms to rebuild entries so append_entry() yields the next index.
+    form = VirusAirDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()

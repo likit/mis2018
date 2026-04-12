@@ -1346,12 +1346,12 @@ def get_product_storage():
     return resp
 
 
-@service_admin.route('/request/virus_disinfection/condition')
+@service_admin.route('/request/virus_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_disinfection_condition_form():
-    product_type = request.args.get("product_type")
+    product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    form = VirusDisinfectionRequestForm()
+    form = VirusDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()
@@ -1559,12 +1559,12 @@ def create_virus_air_disinfection_request(request_id=None):
                            form=form, request_id=request_id, menu=menu)
 
 
-@service_admin.route('/request/virus_air_disinfection/condition')
+@service_admin.route('/request/virus_air_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_air_disinfection_condition_form():
-    product_type = request.args.get("product_type")
+    product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    form = VirusAirDisinfectionRequestForm()
+    form = VirusAirDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()
