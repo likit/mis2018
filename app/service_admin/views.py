@@ -1559,6 +1559,21 @@ def create_virus_air_disinfection_request(request_id=None):
                            form=form, request_id=request_id, menu=menu)
 
 
+@service_admin.route('/request/virus_air_disinfection/condition')
+def get_virus_air_disinfection_condition_form():
+    product_type = request.args.get("product_type")
+    if not product_type:
+        return ''
+    form = VirusAirDisinfectionRequestForm()
+    field_name = f"{product_type}_condition_field"
+    entry_fields = getattr(form, field_name)
+    entry_fields.append_entry()
+    fields = entry_fields[-1]
+    index = fields.id.replace(f"{field_name}-", "")
+    return render_template('service_admin/partials/virus_air_disinfection_request_condition_form.html',
+                           index=index, fields=fields, product_type=product_type)
+
+
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/add', methods=['POST'])
 def add_virus_surface_disinfection_organism_form_entry():
     index = request.args.get("index", type=int)
