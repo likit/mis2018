@@ -249,11 +249,12 @@
                             <div class="field">
                                 <div class="select">
                                     {{ form.product_type(
-                                        **{'hx-get': url_for("academic_services.get_virus_air_disinfection_condition_form",
+                                        **{'hx-post': url_for("academic_services.get_virus_air_disinfection_condition_form",
                                         code=code),
+                                        'hx-include': 'closest form',
                                         'hx-target': '#condition-fields',
                                          'hx-swap': 'beforeend',
-                                         'hx-trigger': 'change, load'}) }}
+                                         'hx-trigger': 'change'}) }}
                                 </div>
                             </div>
                         </div>
