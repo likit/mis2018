@@ -771,9 +771,9 @@ class VirusAirDisinfectionRequestForm(FlaskForm):
         }
     )
     product_type = SelectField('ประเภทการฆ่า/ทำลายเชื้อ', choices=[('', '+ เพิ่มประเภทการฆ่า/ทำลายเชื้อ'),
-                                                                   ('surface', 'การฆ่าเชื้อบนพื้นผิว')],
+                                                                   ('surface_disinfection', 'การฆ่าเชื้อบนพื้นผิว')],
                                validators=[Optional()])
-    surface_disinfection_condition_field = FormField(VirusSurfaceDisinfectionConditionForm, 'การฆ่าเชื้อบนพื้นผิว')
+    surface_disinfection_condition_field = FieldList(FormField(VirusSurfaceDisinfectionConditionForm, 'การฆ่าเชื้อบนพื้นผิว'), min_entries=0)
     # airborne_condition_field = FormField(VirusAirborneDisinfectionConditionForm, 'การลด/ทำลายเชื้อในอากาศ')
 
 
