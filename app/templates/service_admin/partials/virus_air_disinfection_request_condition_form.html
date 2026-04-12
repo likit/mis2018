@@ -12,7 +12,11 @@
                             {% if loop.first %}
                                 {% for _field in subform %}
                                     {% if _field.type != 'CSRFTokenField' %}
-                                        <th style="border: none">
+                                        {% if _field.type == 'SelectField' %}
+                                            <th style="border: none; width: 16.5em">
+                                                {% else %}
+                                            <th style="border: none">
+                                        {% endif %}
                                             {{ _field.label.text }}
                                             {% if _field.label.text != 'อัตราส่วนเจือจางผลิตภัณฑ์' and _field.label.text != 'ต่อน้ำ' %}
                                                 <span class="has-text-danger">*</span>
@@ -59,33 +63,16 @@
 <script>
     function toggleTable(subform) {
         const table = subform.find('table');
-        const checkboxes = table.find('tbody tr input[type="checkbox"]');
 
         function validateInput() {
-            const count = checkboxes.filter(':checked').length;
-            if (count == 0) {
-                checkboxes.prop('required', true)
-                checkboxes.each(function () {
-                    this.setCustomValidity('กรุณาเลือกเชื้ออย่างน้อย 1 รายการ');
-                });
-            } else {
-                checkboxes.prop('required', false);
-                checkboxes.each(function () {
-                    this.setCustomValidity('');
-                });
-            }
-
             table.find('tbody tr').each(function () {
-                const checkbox = $(this).find('input[type="checkbox"]');
                 const textInputs = $(this).find('input[type="text"]');
 
-                const active = checkbox.is(':checked');
                 textInputs.each(function () {
                     const name = $(this).attr('name');
-                    const isOptional = name.endsWith('ratio') || name.endsWith('per_water');
-                    $(this).prop('readonly', !active);
+                    const isOptional = name.endsWith('ratio');
 
-                    if (active && !isOptional) {
+                    if (!isOptional) {
                         $(this)
                             .prop('required', true)
                             .attr('oninvalid', "this.setCustomValidity('กรุณากรอกข้อมูล')")
@@ -94,17 +81,11 @@
                         $(this).prop('required', false);
                         this.setCustomValidity('');
                     }
-
-                    if (!active) {
-                        $(this).val('');
-                    }
                 })
             });
         }
 
         validateInput();
-
-        checkboxes.on('change', validateInput);
     }
 
     function addRequiredField(subform) {
@@ -125,12 +106,13 @@
         const cleanTypeOtherInput = subform.find('input[name$="clean_type_other"]');
         const cleanTypeOtherField = cleanTypeOtherInput.closest('.field');
 
-        if (cleanTypeField && cleanTypeField.includes('อื่นๆ โปรดระบุ')) {
+        if (cleanTypeField && cleanTypeField.includes('อื่น ๆ')) {
             cleanTypeOtherField.show();
             cleanTypeOtherInput.prop('required', true).attr('oninvalid', "this.setCustomValidity('กรุณากรอกรูปแบบการทดสอบ')")
                 .attr('oninput', "this.setCustomValidity('')");
         } else {
             cleanTypeOtherField.hide();
+            cleanTypeOtherInput.prop('required', false)
             cleanTypeOtherInput.val('');
         }
     }
