@@ -91,7 +91,13 @@ def login():
         if user:
             pwd = form.password.data
             if user.verify_password(pwd):
+                if not user.is_active:
+                    flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+                    return redirect(url_for('auth.login'))
                 status = login_user(user, form.remember_me.data)
+                if not status:
+                    flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+                    return redirect(url_for('auth.login'))
                 identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
                 # session.pop('_flashes', None)  # this line clears all unconsumed flash messages.
                 next_url = request.args.get('next', url_for('index'))
@@ -280,7 +286,13 @@ def google_callback():
         flash(u'User does not exists. ไม่พบบัญชีผู้ใช้ในระบบ', 'danger')
         return redirect(url_for('auth.login'))
 
-    login_user(user, True)
+    if not user.is_active:
+        flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+        return redirect(url_for('auth.login'))
+
+    if not login_user(user, True):
+        flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+        return redirect(url_for('auth.login'))
     identity_changed.send(current_app._get_current_object(), identity=Identity(user.id))
     flash(u'You have just logged in with Google. ลงทะเบียนเข้าใช้งานเรียบร้อย', 'success')
 
@@ -340,9 +352,14 @@ def line_profile():
     userId = session['line_profile'].get('userId')
     line_user = StaffAccount.query.filter_by(line_id=userId).first()
     if line_user:
+        if not line_user.is_active:
+            flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+            return redirect(url_for('auth.login'))
         # Automatically login the user with the associated Line account
         if not current_user.is_authenticated:
-            login_user(line_user)
+            if not login_user(line_user):
+                flash(u'Your account is inactive. บัญชีผู้ใช้นี้ไม่สามารถเข้าใช้งานได้', 'danger')
+                return redirect(url_for('auth.login'))
         return redirect(url_for('auth.account'))
     else:
         return render_template('auth/line_account.html',
