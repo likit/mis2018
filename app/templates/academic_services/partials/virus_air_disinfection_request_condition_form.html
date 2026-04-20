@@ -83,9 +83,11 @@
                 {% endif %}
             {% endif %}
         {% endfor %}
-        <button id="{{ fields.name }}" type="button" class="button is-danger is-rounded is-small remove-subform"
-                hx-target=".subform-card"
-                hx-swap="innerHTML"
+        <button type="button" class="button is-danger is-rounded is-small"
+                hx-delete="{{ url_for('academic_services.remove_virus_surface_disinfection_condition_form',
+                name=fields.name) }}"
+                hx-target="closest .subform-card"
+                hx-swap="outerHTML"
         >
             ลบ
         </button>
