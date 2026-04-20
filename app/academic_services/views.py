@@ -1533,9 +1533,8 @@ def get_virus_disinfection_condition_form():
     entry_fields = getattr(form, field_name)
     entry_fields.append_entry()
     fields = entry_fields[-1]
-    index = fields.id.replace(f"{field_name}-", "")
     return render_template('academic_services/partials/virus_disinfection_request_condition_form.html',
-                           index=index, fields=fields, product_type=product_type)
+                           fields=fields, product_type=product_type)
 
 
 @academic_services.route('/request/virus_liquid_condition_form/remove', methods=['DELETE'])
@@ -1615,7 +1614,7 @@ def add_virus_liquid_organism_form_entry():
                                    item_form.liquid_time_duration(class_='input', required=True,
                                                                   oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                                   oninput="this.setCustomValidity('')"),
-                                   url_for('academic_services.remove_virus_liquid_organism_form_entry', index=index,
+                                   url_for('academic_services.remove_virus_liquid_organism_form_entry',
                                            name=item_form.name)
                                    )
     resp = make_response(resp)
@@ -1624,7 +1623,6 @@ def add_virus_liquid_organism_form_entry():
 
 @academic_services.route('/request/virus_liquid_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_liquid_organism_form_entry():
-    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
@@ -1678,7 +1676,7 @@ def add_virus_spray_organism_form_entry():
                                    item_form.spray_time_duration(class_='input', required=True,
                                                                  oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                                  oninput="this.setCustomValidity('')"),
-                                   url_for('academic_services.remove_virus_spray_organism_form_entry', index=index,
+                                   url_for('academic_services.remove_virus_spray_organism_form_entry',
                                            name=item_form.name)
                                    )
     resp = make_response(resp)
@@ -1728,7 +1726,7 @@ def add_virus_coat_organism_form_entry():
             """
             resp = template.format(item_form.coat_organism(),
                                    item_form.coat_time_duration(class_='input'),
-                                   url_for('academic_services.remove_virus_coat_organism_form_entry', index=index,
+                                   url_for('academic_services.remove_virus_coat_organism_form_entry',
                                            name=item_form.name)
                                    )
     resp = make_response(resp)
