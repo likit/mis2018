@@ -83,22 +83,6 @@
                                                         </span>
                                                         <span>vote</span>
                                                     </a>
-                                                    <a class="button is-small is-rounded is-info mt-1"
-                                                       href="{{url_for('besttime.edit_poll',poll_id=invitation.poll.id,
-                                                       tab=tab)}}">
-                                                        <span class="icon">
-                                                            <i class="fa-solid fa-gear"></i>
-                                                        </span>
-                                                        <span>manage</span>
-                                                    </a>
-                                                    <a class="button is-small is-rounded is-danger mt-1"
-                                                       href="{{url_for('besttime.close_poll',poll_id=invitation.poll.id,
-                                                       tab=tab)}}">
-                                                        <span class="icon">
-                                                            <i class="fa-solid fa-power-off"></i>
-                                                        </span>
-                                                        <span>close</span>
-                                                    </a>
                                                 {% endif %}
                                                 <a class="button is-small is-rounded is-warning mt-1"
                                                    href="{{url_for('besttime.view_results', poll_id=invitation.poll.id,
