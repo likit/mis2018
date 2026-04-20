@@ -144,16 +144,6 @@ def walk_form_fields(field, quote_column_names, cols=set(), keys=[], values='', 
 
 
 def walk_form_field_records(field, quote_column_names):
-    """
-    Build coherent pricing "records" from WTForms fields.
-
-    Unlike `walk_form_fields` (which flattens everything), this respects
-    `FieldList` boundaries so values from different repeated boxes/entries
-    won't be mixed together when generating quotation pricing keys.
-
-    Returns a list of records; each record is a list of (field_name, value) pairs.
-    """
-
     def _records(f):
         field_name = f.name.split('-')[-1]
         if field_name in ('csrf_token', 'submit'):

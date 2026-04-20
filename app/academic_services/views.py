@@ -1738,12 +1738,9 @@ def create_virus_air_disinfection_request(request_id=None):
 
 @academic_services.route('/request/virus_air_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_air_disinfection_condition_form():
-    # Support both GET (query string) and POST (htmx form submit).
     product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    # When called via POST, request.form contains the existing FieldList inputs,
-    # allowing WTForms to rebuild entries so append_entry() yields the next index.
     form = VirusAirDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
     entry_fields = getattr(form, field_name)
@@ -1758,6 +1755,7 @@ def get_virus_air_disinfection_condition_form():
 def add_virus_surface_disinfection_organism_form_entry():
     index = request.args.get("index", type=int)
     form = VirusAirDisinfectionRequestForm()
+    print('f', form.surface_disinfection_condition_field[-1])
     form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry()
     item_form = form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields[-1]
     template = """
@@ -1781,7 +1779,7 @@ def add_virus_surface_disinfection_organism_form_entry():
                            item_form.surface_disinfection_period_test(class_='input', required=True,
                                                                       oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                                       oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_surface_disinfection_organism_form_entry',
+                           url_for('academic_services.remove_virus_surface_disinfection_organism_form_entry',
                                    index=index, name=item_form.name)
                            )
     resp = make_response(resp)
