@@ -11,7 +11,7 @@ from pandas import DataFrame
 from sqlalchemy import exc, and_, or_
 from . import pa_blueprint as pa
 
-from app.roles import hr_permission, hr_confidential
+from app.roles import hr_permission, hr_confidential, hr_pa
 from app.PA.forms import *
 from app.main import mail, StaffEmployment, StaffLeaveUsedQuota, StaffSeminarAttend, StaffPersonalInfo
 
@@ -2022,7 +2022,7 @@ def edit_confirm_scoresheet(scoresheet_id):
 
 @pa.route('/hr/all-pa', methods=['GET', 'POST'])
 @login_required
-@hr_confidential.require()
+@hr_pa.require()
 def all_pa():
     pa = PAAgreement.query.all()
     rounds = PARound.query.order_by(PARound.id.desc()).all()
@@ -2204,7 +2204,7 @@ def add_kpi_job_position_item(job_kpi_id):
 
 @pa.route('/hr/all-kpis-all-items', methods=['GET', 'POST'])
 @login_required
-@hr_confidential.require()
+@hr_pa.require()
 def all_kpi_all_item():
     org_id = request.args.get('deptid', type=int)
     round_id = request.args.get('roundid', type=int)
@@ -2276,7 +2276,7 @@ def all_kpi_all_item():
 
 @pa.route('/hr/all-kpis', methods=['GET', 'POST'])
 @login_required
-@hr_confidential.require()
+@hr_pa.require()
 def all_kpis():
     org_id = request.args.get('deptid', type=int)
     round_id = request.args.get('roundid', type=int)

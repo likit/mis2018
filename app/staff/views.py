@@ -32,7 +32,7 @@ from flask_admin import BaseView, expose
 from itsdangerous.url_safe import URLSafeTimedSerializer as TimedJSONWebSignatureSerializer
 import qrcode
 from app.staff.forms import StaffSeminarForm, create_seminar_attend_form, StaffGroupDetailForm
-from app.roles import admin_permission, hr_permission, secretary_permission, manager_permission
+from app.roles import admin_permission, hr_permission, secretary_permission, manager_permission, event_staff_permission
 from app.staff.models import *
 
 from app.comhealth.views import allowed_file
@@ -226,7 +226,7 @@ def index():
                            new_leave_requests=new_leave_requests,
                            new_wfh_requests=new_wfh_requests,
                            secretary_permission=secretary_permission,
-                           manager_permission=manager_permission,
+                           manager_permission=manager_permission, event_staff_permission=event_staff_permission
                            )
 
 
@@ -2474,7 +2474,7 @@ def get_login_records():
 
 @staff.route('/login-activity-scan/<int:seminar_id>', methods=['GET', 'POST'])
 @csrf.exempt
-@hr_permission.union(secretary_permission).require()
+@hr_permission.union(secretary_permission).union(event_staff_permission).require()
 @login_required
 def checkin_activity(seminar_id):
     seminar = StaffSeminar.query.get(seminar_id)
@@ -3349,7 +3349,7 @@ def seminar_suggest():
 
 @staff.route('/seminar/add-attend/for-hr/<int:seminar_id>')
 @login_required
-@hr_permission.union(secretary_permission).require()
+@hr_permission.union(secretary_permission).union(event_staff_permission).require()
 def seminar_attend_info_for_hr(seminar_id):
     seminar = StaffSeminar.query.get(seminar_id)
     attends = StaffSeminarAttend.query.filter_by(seminar_id=seminar_id).all()
