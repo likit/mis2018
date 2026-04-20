@@ -200,7 +200,7 @@
                                                                                 <td style="border: none">
                                                                                     <a class="button is-danger is-outlined"
                                                                                        hx-delete="{{ url_for('academic_services.remove_virus_surface_disinfection_organism_form_entry',
-                                                                                       index=index, name=subform.name) }}"
+                                                                                       name=entry.name) }}"
                                                                                        hx-target="closest tr"
                                                                                        hx-swap="outerHTML"
                                                                                     >
@@ -213,7 +213,7 @@
                                                                             <td>
                                                                                 <a class="button is-info is-outlined is-rounded"
                                                                                    hx-post="{{ url_for('academic_services.add_virus_surface_disinfection_organism_form_entry',
-                                                                                           index=index) }}"
+                                                                                   name=entry.name) }}"
                                                                                    hx-target="previous tr"
                                                                                    hx-swap="afterend"
                                                                                 >
