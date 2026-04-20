@@ -1628,13 +1628,13 @@ def remove_virus_liquid_organism_form_entry():
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.liquid_condition_field[index].liquid_organism_fields:
+    for entry in form.liquid_condition_field:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.liquid_condition_field[index].liquid_organism_fields) > 0:
-        form.liquid_condition_field[index].liquid_organism_fields.pop_entry()
-    for entry in temp_entries:
-        form.liquid_condition_field[index].liquid_organism_fields.append_entry(entry)
+        while len(entry.liquid_organism_fields) > 0:
+            entry.liquid_organism_fields.pop_entry()
+        for new_entry in temp_entries:
+            entry.liquid_organism_fields.append_entry(new_entry)
     return ""
 
 
@@ -1687,17 +1687,16 @@ def add_virus_spray_organism_form_entry():
 
 @academic_services.route('/request/virus_spray_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_spray_organism_form_entry():
-    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.spray_condition_field[index].spray_organism_fields:
+    for entry in form.spray_condition_field:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.spray_condition_field[index].spray_organism_fields) > 0:
-        form.spray_condition_field[index].spray_organism_fields.pop_entry()
-    for entry in temp_entries:
-        form.spray_condition_field[index].spray_organism_fields.append_entry(entry)
+        while len(entry.spray_organism_fields) > 0:
+            entry.spray_organism_fields.pop_entry()
+        for new_entry in temp_entries:
+            entry.spray_organism_fields.append_entry(new_entry)
     return ""
 
 
@@ -1738,17 +1737,16 @@ def add_virus_coat_organism_form_entry():
 
 @academic_services.route('/request/virus_coat_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_coat_organism_form_entry():
-    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.coat_condition_field[index].coat_organism_fields:
+    for entry in form.coat_condition_field:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.coat_condition_field[index].coat_organism_fields) > 0:
-        form.coat_condition_field[index].coat_organism_fields.pop_entry()
-    for entry in temp_entries:
-        form.coat_condition_field[index].coat_organism_fields.append_entry(entry)
+        while len(entry.coat_organism_fields) > 0:
+            entry.coat_organism_fields.pop_entry()
+        for new_entry in temp_entries:
+            entry.coat_organism_fields.append_entry(new_entry)
     return ""
 
 
@@ -1858,17 +1856,16 @@ def add_virus_surface_disinfection_organism_form_entry():
 
 @academic_services.route('/request/virus_surface_disinfection_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_surface_disinfection_organism_form_entry():
-    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusAirDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields:
+    for entry in form.surface_disinfection_condition_field:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields) > 0:
-        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.pop_entry()
-    for entry in temp_entries:
-        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry(entry)
+        while len(entry.surface_disinfection_organism_fields) > 0:
+           entry.surface_disinfection_organism_fields.pop_entry()
+        for new_entry in temp_entries:
+            entry.surface_disinfection_organism_fields.append_entry(new_entry)
     return ""
 
 
