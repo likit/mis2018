@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 
 import pandas as pd
 import requests
+import pytz
 from bahttext import bahttext
 from flask import (render_template, flash, redirect,
                    url_for, session, request, send_file,
@@ -1951,25 +1952,35 @@ def add_service_to_org(org_id):
     if form.validate_on_submit():
         existing_service = ComHealthService.query \
             .filter_by(date=form.service_date.data, location=form.location.data).first()
+        employee_ids_query = db.session.query(ComHealthCustomer.id) \
+            .filter_by(org_id=org_id) \
+            .yield_per(500)
+
+        records_to_add = []
         if not existing_service:
             new_service = ComHealthService(date=form.service_date.data,
                                            location=form.location.data)
             db.session.add(new_service)
-            for employee in org.employees:
-                new_record = ComHealthRecord(date=form.service_date.data,
-                                             service=new_service,
-                                             customer=employee)
-                db.session.add(new_record)
-            db.session.commit()
+            db.session.flush()
+            for (employee_id,) in employee_ids_query:
+                records_to_add.append(ComHealthRecord(date=form.service_date.data,
+                                                      service_id=new_service.id,
+                                                      customer_id=employee_id))
         else:
-            for employee in org.employees:
-                services = set([rec.service for rec in employee.records])
-                if existing_service not in services:
-                    new_record = ComHealthRecord(date=form.service_date.data,
-                                                 service=existing_service,
-                                                 customer=employee)
-                    db.session.add(new_record)
-                    db.session.commit()
+            existing_customer_ids = set(
+                cid for (cid,) in db.session.query(ComHealthRecord.customer_id)
+                .filter_by(service_id=existing_service.id)
+                .all()
+            )
+            for (employee_id,) in employee_ids_query:
+                if employee_id not in existing_customer_ids:
+                    records_to_add.append(ComHealthRecord(date=form.service_date.data,
+                                                          service_id=existing_service.id,
+                                                          customer_id=employee_id))
+
+        if records_to_add:
+            db.session.add_all(records_to_add)
+        db.session.commit()
 
         flash('New service has been added to the organization.')
         return redirect(url_for('comhealth.index'))
@@ -2180,12 +2191,20 @@ def export_csv(service_id):
             selected_date = datetime.strptime(export_date, '%Y-%m-%d').date()
         except ValueError:
             selected_date = None
+    def _to_bangkok(dt):
+        if not dt:
+            return None
+        if dt.tzinfo is None:
+            dt = pytz.utc.localize(dt)
+        return dt.astimezone(bangkok)
+
     rows = []
     for record in service.records:
+        local_checkin = _to_bangkok(record.checkin_datetime)
         if selected_date:
-            if not record.checkin_datetime:
+            if not local_checkin:
                 continue
-            if record.checkin_datetime.date() != selected_date:
+            if local_checkin.date() != selected_date:
                 continue
         if not record.labno:
             continue
@@ -2214,7 +2233,9 @@ def export_csv(service_id):
                      'note_to_lab': u'{}'.format(record.comment),
                      'employment_note': u'{}'.format(record.note),
                      'finance_contact': u'{}'.format(reason),
-                     'checkin_datetime': u'{}'.format(record.checkin_datetime)})
+                     'checkin_datetime': u'{}'.format(
+                         local_checkin.strftime('%Y-%m-%d %H:%M:%S') if local_checkin else ''
+                     )})
     if rows:
         pd.DataFrame(rows).to_excel('export.xlsx',
                                     header=True,

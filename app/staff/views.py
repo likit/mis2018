@@ -32,7 +32,7 @@ from flask_admin import BaseView, expose
 from itsdangerous.url_safe import URLSafeTimedSerializer as TimedJSONWebSignatureSerializer
 import qrcode
 from app.staff.forms import StaffSeminarForm, create_seminar_attend_form, StaffGroupDetailForm
-from app.roles import admin_permission, hr_permission, secretary_permission, manager_permission
+from app.roles import admin_permission, hr_permission, secretary_permission, manager_permission, event_staff_permission
 from app.staff.models import *
 
 from app.comhealth.views import allowed_file
@@ -226,7 +226,7 @@ def index():
                            new_leave_requests=new_leave_requests,
                            new_wfh_requests=new_wfh_requests,
                            secretary_permission=secretary_permission,
-                           manager_permission=manager_permission,
+                           manager_permission=manager_permission, event_staff_permission=event_staff_permission
                            )
 
 
@@ -1210,6 +1210,9 @@ def info_request_cancel_leave_request():
 @login_required
 def approver_cancel_leave_request(req_id, cancelled_account_id):
     req = StaffLeaveRequest.query.get(req_id)
+    if req.cancelled_at:
+        flash('รายการถูกยกเลิกเรียบร้อยแล้ว', 'warning')
+        return redirect(request.referrer)
     req.cancelled_at = tz.localize(datetime.today())
     req.cancelled_account_id = cancelled_account_id
     db.session.add(req)
@@ -1278,20 +1281,16 @@ def approver_cancel_leave_request(req_id, cancelled_account_id):
 @login_required
 def cancel_leave_request(req_id, cancelled_account_id):
     req = StaffLeaveRequest.query.get(req_id)
+    if req.cancelled_at:
+        flash('รายการถูกยกเลิกเรียบร้อยแล้ว', 'warning')
+        return redirect(request.referrer)
     req.cancelled_at = tz.localize(datetime.today())
     req.cancelled_account_id = cancelled_account_id
     db.session.add(req)
     db.session.commit()
 
     _, END_FISCAL_DATE = get_fiscal_date(req.start_datetime)
-
     quota = req.quota
-    used_quota = current_user.personal_info.get_total_leaves(quota.id, tz.localize(START_FISCAL_DATE),
-                                                             tz.localize(END_FISCAL_DATE))
-    pending_days = current_user.personal_info.get_total_pending_leaves_request \
-        (quota.id, tz.localize(START_FISCAL_DATE), tz.localize(END_FISCAL_DATE))
-    quota_limit = calculate_leave_quota_limit(req.staff.id, quota.id, req.start_datetime)
-
     is_used_quota = StaffLeaveUsedQuota.query.filter_by(leave_type_id=req.quota.leave_type_id,
                                                         staff_account_id=req.staff_account_id,
                                                         fiscal_year=END_FISCAL_DATE.year).first()
@@ -1314,6 +1313,11 @@ def cancel_leave_request(req_id, cancelled_account_id):
                 db.session.add(next_used_quota)
                 db.session.commit()
     else:
+        used_quota = current_user.personal_info.get_total_leaves(quota.id, tz.localize(START_FISCAL_DATE),
+                                                                 tz.localize(END_FISCAL_DATE))
+        pending_days = current_user.personal_info.get_total_pending_leaves_request \
+            (quota.id, tz.localize(START_FISCAL_DATE), tz.localize(END_FISCAL_DATE))
+        quota_limit = calculate_leave_quota_limit(req.staff.id, quota.id, req.start_datetime)
         new_used_quota = StaffLeaveUsedQuota(
             leave_type_id=req.quota.leave_type_id,
             staff_account_id=current_user.id,
@@ -2470,7 +2474,7 @@ def get_login_records():
 
 @staff.route('/login-activity-scan/<int:seminar_id>', methods=['GET', 'POST'])
 @csrf.exempt
-@hr_permission.union(secretary_permission).require()
+@hr_permission.union(secretary_permission).union(event_staff_permission).require()
 @login_required
 def checkin_activity(seminar_id):
     seminar = StaffSeminar.query.get(seminar_id)
@@ -3345,7 +3349,7 @@ def seminar_suggest():
 
 @staff.route('/seminar/add-attend/for-hr/<int:seminar_id>')
 @login_required
-@hr_permission.union(secretary_permission).require()
+@hr_permission.union(secretary_permission).union(event_staff_permission).require()
 def seminar_attend_info_for_hr(seminar_id):
     seminar = StaffSeminar.query.get(seminar_id)
     attends = StaffSeminarAttend.query.filter_by(seminar_id=seminar_id).all()
