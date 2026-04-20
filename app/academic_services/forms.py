@@ -61,25 +61,53 @@ class ServiceCustomerInfoForm(ModelForm):
     customer_contacts = FieldList(FormField(ServiceCustomerContactForm, default=ServiceCustomerContact), min_entries=1)
 
 
+class QuerySelectFieldRequired(QuerySelectField):
+    def iter_choices(self):
+        for value, label, selected in super().iter_choices():
+            if value == '__None':
+                yield '', label, selected
+            else:
+                yield value, label, selected
+
+    def process_formdata(self, valuelist):
+        if valuelist and valuelist[0] == '':
+            valuelist = ['__None']
+        return super().process_formdata(valuelist)
+
+
 class ServiceCustomerAddressForm(ModelForm):
     class Meta:
         model = ServiceCustomerAddress
 
     name = StringField(validators=[DataRequired()])
     address = StringField('ที่อยู่', validators=[DataRequired()])
-    province = QuerySelectField('จังหวัด', query_factory=lambda: Province.query.order_by(Province.order_id.asc()),
-                                allow_blank=True,
-                                blank_text='กรุณาเลือกจังหวัด', get_label='name',
-                                validators=[DataRequired(message='กรุณาเลือกจังหวัด')])
-    district = QuerySelectField('เขต/อำเภอ', query_factory=lambda: District.query.order_by(District.order_id.asc()),
-                                allow_blank=True,
-                                blank_text='กรุณาเลือกเขต/อำเภอ', get_label='name',
-                                validators=[DataRequired(message='กรุณาเลือกเขต/อำเภอ')])
-    subdistrict = QuerySelectField('แขวง/ตำบล',
-                                   query_factory=lambda: Subdistrict.query.order_by(Subdistrict.order_id.asc()),
-                                   allow_blank=True,
-                                   blank_text='กรุณาเลือกแขวง/ตำบล', get_label='name',
-                                   validators=[DataRequired(message='กรุณาเลือกแขวง/ตำบล')])
+    province = QuerySelectFieldRequired(
+        'จังหวัด',
+        query_factory=lambda: Province.query.order_by(Province.order_id.asc()),
+        allow_blank=True,
+        blank_text='กรุณาเลือกจังหวัด',
+        get_label='name',
+        validators=[DataRequired(message='กรุณาเลือกจังหวัด')],
+        render_kw={'required': True},
+    )
+    district = QuerySelectFieldRequired(
+        'เขต/อำเภอ',
+        query_factory=lambda: District.query.order_by(District.order_id.asc()),
+        allow_blank=True,
+        blank_text='กรุณาเลือกเขต/อำเภอ',
+        get_label='name',
+        validators=[DataRequired(message='กรุณาเลือกเขต/อำเภอ')],
+        render_kw={'required': True},
+    )
+    subdistrict = QuerySelectFieldRequired(
+        'แขวง/ตำบล',
+        query_factory=lambda: Subdistrict.query.order_by(Subdistrict.order_id.asc()),
+        allow_blank=True,
+        blank_text='กรุณาเลือกแขวง/ตำบล',
+        get_label='name',
+        validators=[DataRequired(message='กรุณาเลือกแขวง/ตำบล')],
+        render_kw={'required': True},
+    )
     zipcode = StringField('รหัสไปรษณีย์', validators=[DataRequired()])
     phone_number = StringField('เบอร์โทรศัพท์', validators=[DataRequired()])
 
@@ -370,8 +398,8 @@ class BacteriaRequestForm(FlaskForm):
                       render_kw={"oninvalid": "this.setCustomValidity('กรุณาเลือกวันหมดอายุ')",
                                  "oninput": "this.setCustomValidity('')"
                                  })
-    lot_no = StringField('เลขที่ผลิต', validators=[DataRequired()],
-                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต')",
+    lot_no = StringField('เลขที่ผลิต / Lot no.', validators=[DataRequired()],
+                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต / Lot no.')",
                                     "oninput": "this.setCustomValidity('')"
                                     })
     manufacturer = StringField('ผู้ผลิต', validators=[DataRequired()],
@@ -544,11 +572,17 @@ class VirusDisinfectionRequestForm(FlaskForm):
                                          "oninvalid": "this.setCustomValidity('กรุณากรอกสารสำคัญที่ออกฤทธิ์ และปริมาณสารสำคัญ')",
                                          "oninput": "this.setCustomValidity('')"
                                      })
-    product_appearance = StringField('ลักษณะทางกายภาพของผลิตภัณฑ์', validators=[DataRequired()],
-                                     render_kw={
-                                         "oninvalid": "this.setCustomValidity('กรุณากรอกลักษณะทางกายภาพของผลิตภัณฑ์')",
-                                         "oninput": "this.setCustomValidity('')"
-                                     })
+    product_appearance = SelectField('ลักษณะทางกายภาพของผลิตภัณฑ์',
+                                  choices=[('', 'กรุณาเลือกลักษณะทางกายภาพของผลิตภัณฑ์'),
+                                           ('ของเหลว', 'ของเหลว'),
+                                           ('ผง/เม็ดละลายน้ำ', 'ผง/เม็ดละลายน้ำ'),
+                                           ('สเปรย์', 'สเปรย์'),
+                                           ('พื้นผิวสำเร็จรูป', 'พื้นผิวสำเร็จรูป'),
+                                           ('อื่นๆ โปรดระบุ', 'อื่นๆ โปรดระบุ')], validators=[DataRequired()],
+                                  render_kw={"oninvalid": "this.setCustomValidity('กรุณาเลือกลักษณะทางกายภาพของผลิตภัณฑ์')",
+                                             "oninput": "this.setCustomValidity('')"
+                                             })
+    product_appearance_other = StringField('ระบุ')
     kind = StringField('ลักษณะบรรจุภัณฑ์', validators=[DataRequired()],
                        render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกลักษณธบรรจุภัณฑ์')",
                                   "oninput": "this.setCustomValidity('')"
@@ -565,8 +599,8 @@ class VirusDisinfectionRequestForm(FlaskForm):
                       render_kw={"oninvalid": "this.setCustomValidity('กรุณาเลือกวันหมดอายุ')",
                                  "oninput": "this.setCustomValidity('')"
                                  })
-    lot_no = StringField('เลขที่ผลิต', validators=[DataRequired()],
-                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต')",
+    lot_no = StringField('เลขที่ผลิต / Lot no.', validators=[DataRequired()],
+                         render_kw={"oninvalid": "this.setCustomValidity('กรุณากรอกเลขที่ผลิต / Lot no.')",
                                     "oninput": "this.setCustomValidity('')"
                                     })
     amount = StringField('จำนวนที่ส่ง', validators=[DataRequired()],
@@ -631,10 +665,11 @@ class VirusDisinfectionRequestForm(FlaskForm):
             "oninput": "this.setCustomValidity('')"
         }
     )
-    liquid_condition_field = FormField(VirusLiquidConditionForm,
-                                       'ผลิตภัณฑ์ฆ่าเชื้อชนิดของเหลว ชนิดผง หรือชนิดเม็ดที่ละลายน้ำได้')
-    spray_condition_field = FormField(VirusSprayConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อชนิดฉีดพ่น')
-    coat_condition_field = FormField(VirusCoatConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อที่เคลือบบนพื้นผิวสำเร็จรูป')
+    liquid_condition_field = FieldList(FormField(VirusLiquidConditionForm,
+                                                 'ผลิตภัณฑ์ฆ่าเชื้อชนิดของเหลว ชนิดผง หรือชนิดเม็ดที่ละลายน้ำได้'),
+                                       min_entries=0)
+    spray_condition_field = FieldList(FormField(VirusSprayConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อชนิดฉีดพ่น'), min_entries=0)
+    coat_condition_field = FieldList(FormField(VirusCoatConditionForm, 'ผลิตภัณฑ์ฆ่าเชื้อที่เคลือบบนพื้นผิวสำเร็จรูป'), min_entries=0)
 
 
 class VirusSurfaceDisinfectionTestConditionForm(FlaskForm):
@@ -736,9 +771,9 @@ class VirusAirDisinfectionRequestForm(FlaskForm):
         }
     )
     product_type = SelectField('ประเภทการฆ่า/ทำลายเชื้อ', choices=[('', '+ เพิ่มประเภทการฆ่า/ทำลายเชื้อ'),
-                                                                   ('surface', 'การฆ่าเชื้อบนพื้นผิว')],
+                                                                   ('surface_disinfection', 'การฆ่าเชื้อบนพื้นผิว')],
                                validators=[Optional()])
-    surface_disinfection_condition_field = FormField(VirusSurfaceDisinfectionConditionForm, 'การฆ่าเชื้อบนพื้นผิว')
+    surface_disinfection_condition_field = FieldList(FormField(VirusSurfaceDisinfectionConditionForm, 'การฆ่าเชื้อบนพื้นผิว'), min_entries=0)
     # airborne_condition_field = FormField(VirusAirborneDisinfectionConditionForm, 'การลด/ทำลายเชื้อในอากาศ')
 
 

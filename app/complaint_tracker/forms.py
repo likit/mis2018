@@ -68,6 +68,12 @@ def create_record_form(record_id, topic_id):
                                                     allow_blank=True, blank_text='กรุณาเลือกสถานที่ตั้งครุภัณฑ์ปัจจุบัน')
         room = QuerySelectField('ห้อง', query_factory=lambda: RoomResource.query.order_by(RoomResource.number.asc()),
                                                     allow_blank=True, blank_text='กรุณาเลือกห้อง')
+        cost_center = QuerySelectField(query_factory=lambda: CostCenter.query.all(), get_label='id',
+                                               allow_blank=True, blank_text='กรุณาเลือกรหัสศูนย์ต้นทุน')
+        io_code = QuerySelectField(query_factory=lambda: IOCode.query.all(), get_label='id', allow_blank=True,
+                                           blank_text='กรุณาเลือกรหัสใบสั่งงานภายใน')
+        product_code = QuerySelectField(query_factory=lambda: ProductCode.query.all(), get_label='product_code',
+                                                allow_blank=True, blank_text='กรุณาเลือกผลผลิต')
         file_upload = FileField('File Upload')
     return ComplaintRecordForm
 
@@ -91,6 +97,20 @@ class ComplaintCoordinatorForm(ModelForm):
     coordinators = QuerySelectMultipleField(query_factory=lambda: StaffAccount.get_active_accounts(), get_label='fullname')
 
 
+class QuerySelectFieldRequired(QuerySelectField):
+    def iter_choices(self):
+        for value, label, selected in super().iter_choices():
+            if value == '__None':
+                yield '', label, selected
+            else:
+                yield value, label, selected
+
+    def process_formdata(self, valuelist):
+        if valuelist and valuelist[0] == '':
+            valuelist = ['__None']
+        return super().process_formdata(valuelist)
+
+
 class ComplaintRepairApprovalForm(ModelForm):
     class Meta:
         model = ComplaintRepairApproval
@@ -101,12 +121,12 @@ class ComplaintRepairApprovalForm(ModelForm):
                                                                   ('ไม่เร่งด่วน (ซื้อ/จ้าง)', 'ไม่เร่งด่วน (ซื้อ/จ้าง)'),
                                                                   ])
     principle_approval_type = RadioField('ประเภทการขออนุมัติ', choices=[('ซื้อ', 'ซื้อ'), ('จ้าง', 'จ้าง'), ('จ้างซ่อม', 'จ้างซ่อม')], validate_choice=False)
-    cost_center = QuerySelectField(query_factory=lambda: CostCenter.query.all(), get_label='id',
-                                   allow_blank=True, blank_text='กรุณาเลือกรหัสศูนย์ต้นทุน')
-    io_code = QuerySelectField(query_factory=lambda: IOCode.query.all(), get_label='id', allow_blank=True,
-                               blank_text='กรุณาเลือกรหัสใบสั่งงานภายใน')
-    product_code = QuerySelectField(query_factory=lambda: ProductCode.query.all(), get_label='product_code',
-                                    allow_blank=True, blank_text='กรุณาเลือกผลผลิต')
+    cost_center = QuerySelectFieldRequired(query_factory=lambda: CostCenter.query.all(), get_label='id',
+                                   allow_blank=True, blank_text='กรุณาเลือกรหัสศูนย์ต้นทุน',  render_kw={'required': True})
+    io_code = QuerySelectFieldRequired(query_factory=lambda: IOCode.query.all(), get_label='id', allow_blank=True,
+                               blank_text='กรุณาเลือกรหัสใบสั่งงานภายใน',  render_kw={'required': True})
+    product_code = QuerySelectFieldRequired(query_factory=lambda: ProductCode.query.all(), get_label='product_code',
+                                    allow_blank=True, blank_text='กรุณาเลือกผลผลิต',  render_kw={'required': True})
 
 
 class ComplaintCommitteeForm(ModelForm):

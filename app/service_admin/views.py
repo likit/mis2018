@@ -143,6 +143,46 @@ def walk_form_fields(field, quote_column_names, cols=set(), keys=[], values='', 
     return keys
 
 
+def walk_form_field_records(field, quote_column_names):
+    """
+    Build coherent pricing "records" from WTForms fields.
+
+    Unlike `walk_form_fields` (which flattens everything), this respects
+    `FieldList` boundaries so values from different repeated boxes/entries
+    won't be mixed together when generating quotation pricing keys.
+
+    Returns a list of records; each record is a list of (field_name, value) pairs.
+    """
+
+    def _records(f):
+        field_name = f.name.split('-')[-1]
+        if field_name in ('csrf_token', 'submit'):
+            return [[]]
+
+        if isinstance(f, FieldList):
+            all_records = []
+            for entry in f.entries:
+                all_records.extend(_records(entry))
+            return all_records or [[]]
+
+        if isinstance(f, FormField):
+            records = [[]]
+            for sub in f:
+                sub_records = _records(sub)
+                records = [r + sr for r in records for sr in sub_records]
+            return records
+
+        clean_field_name = re.sub(r'_\d+$', '', field_name)
+        if clean_field_name not in quote_column_names:
+            return [[]]
+
+        if isinstance(f.data, list):
+            return [[(field_name, str(item))] for item in f.data]
+        return [[(field_name, str(f.data))]]
+
+    return _records(field)
+
+
 # def request_data(service_request, type):
 #     data = service_request.data
 #     if service_request.sub_lab.code == 'bacteria':
@@ -271,40 +311,41 @@ def virus_disinfection_request_data(service_request, type):
     product_header = False
     test_header = False
     for field in form:
-        if field.type == 'FormField':
+        if field.type == 'FieldList':
             if not test_header:
                 values.append({'type': 'header', 'data': 'รายการทดสอบ'})
                 test_header = True
-            if not any([f.data for f in field._fields.values() if f.type != 'HiddenField' and f.type != 'FieldList']):
+            if not any([fd.data for fd in field if fd.type != 'HiddenField' and fd.type != 'FieldList']):
                 continue
-            for fname, fn in field._fields.items():
-                if fn.type == 'FieldList':
-                    rows = []
-                    for entry in fn.entries:
-                        row = {}
-                        for f_name, f in entry._fields.items():
-                            if f.data:
-                                label = f.label.text
-                                if label.startswith("เชื้อ"):
-                                    data = ', '.join(f.data) if isinstance(f.data, list) else str(f.data or '')
-                                    if type == 'form':
-                                        row[label] = f"<i>{data}</i>"
+            for fd in field:
+                for fname, fn in fd._fields.items():
+                    if fn.type == 'FieldList':
+                        rows = []
+                        for entry in fn.entries:
+                            row = {}
+                            for f_name, f in entry._fields.items():
+                                if f.data:
+                                    label = f.label.text
+                                    if label.startswith("เชื้อ"):
+                                        data = ', '.join(f.data) if isinstance(f.data, list) else str(f.data or '')
+                                        if type == 'form':
+                                            row[label] = f"<i>{data}</i>"
+                                        else:
+                                            row[label] = f"<font name='SarabunItalic'>{data}</font>"
                                     else:
-                                        row[label] = f"<font name='SarabunItalic'>{data}</font>"
-                                else:
-                                    row[label] = f.data
-                        if row:
-                            rows.append(row)
-                    if rows:
-                        values.append({'type': 'table', 'data': rows})
-                else:
-                    if fn.data:
-                        label = fn.label.text
-                        value = ', '.join(fn.data) if fn.type == 'CheckboxField' else fn.data
-                        if fn.type == 'HiddenField':
-                            values.append({'type': 'content_header', 'data': f"{value}"})
-                        else:
-                            values.append({'type': 'text', 'data': f"{label} : {value}"})
+                                        row[label] = f.data
+                            if row:
+                                rows.append(row)
+                        if rows:
+                            values.append({'type': 'table', 'data': rows})
+                    else:
+                        if fn.data:
+                            label = fn.label.text
+                            value = ', '.join(fn.data) if fn.type == 'CheckboxField' else fn.data
+                            if fn.type == 'HiddenField':
+                                values.append({'type': 'content_header', 'data': f"{value}"})
+                            else:
+                                values.append({'type': 'text', 'data': f"{label} : {value}"})
         else:
             if not product_header:
                 values.append({'type': 'header', 'data': 'ข้อมูลผลิตภัณฑ์'})
@@ -331,40 +372,41 @@ def virus_air_disinfection_request_data(service_request, type):
     product_header = False
     test_header = False
     for field in form:
-        if field.type == 'FormField':
+        if field.type == 'FieldList':
             if not test_header:
                 values.append({'type': 'header', 'data': 'รายการทดสอบ'})
                 test_header = True
-            if not any([f.data for f in field._fields.values() if f.type != 'HiddenField' and f.type != 'FieldList']):
+            if not any([fd.data for fd in field if fd.type != 'HiddenField' and fd.type != 'FieldList']):
                 continue
-            for fname, fn in field._fields.items():
-                if fn.type == 'FieldList':
-                    rows = []
-                    for entry in fn.entries:
-                        row = {}
-                        for f_name, f in entry._fields.items():
-                            if f.data:
-                                label = f.label.text
-                                if label.startswith("เชื้อ"):
-                                    data = ', '.join(f.data) if isinstance(f.data, list) else str(f.data or '')
-                                    if type == 'form':
-                                        row[label] = f"<i>{data}</i>"
+            for fd in field:
+                for fname, fn in fd._fields.items():
+                    if fn.type == 'FieldList':
+                        rows = []
+                        for entry in fn.entries:
+                            row = {}
+                            for f_name, f in entry._fields.items():
+                                if f.data:
+                                    label = f.label.text
+                                    if label.startswith("เชื้อ"):
+                                        data = ', '.join(f.data) if isinstance(f.data, list) else str(f.data or '')
+                                        if type == 'form':
+                                            row[label] = f"<i>{data}</i>"
+                                        else:
+                                            row[label] = f"<font name='SarabunItalic'>{data}</font>"
                                     else:
-                                        row[label] = f"<font name='SarabunItalic'>{data}</font>"
-                                else:
-                                    row[label] = f.data
-                        if row:
-                            rows.append(row)
-                    if rows:
-                        values.append({'type': 'table', 'data': rows})
-                else:
-                    if fn.data:
-                        label = fn.label.text
-                        value = ', '.join(fn.data) if fn.type == 'CheckboxField' else fn.data
-                        if fn.type == 'HiddenField':
-                            values.append({'type': 'content_header', 'data': f"{value}"})
-                        else:
-                            values.append({'type': 'text', 'data': f"{label} : {value}"})
+                                        row[label] = f.data
+                            if row:
+                                rows.append(row)
+                        if rows:
+                            values.append({'type': 'table', 'data': rows})
+                    else:
+                        if fn.data:
+                            label = fn.label.text
+                            value = ', '.join(fn.data) if fn.type == 'CheckboxField' else fn.data
+                            if fn.type == 'HiddenField':
+                                values.append({'type': 'content_header', 'data': f"{value}"})
+                            else:
+                                values.append({'type': 'text', 'data': f"{label} : {value}"})
         else:
             if not product_header:
                 values.append({'type': 'header', 'data': 'ข้อมูลผลิตภัณฑ์'})
@@ -676,6 +718,56 @@ request_data_paths = {'bacteria': bacteria_request_data,
 # @login_required
 def index():
     return render_template('service_admin/index.html')
+
+
+@service_admin.route('/service_guide')
+def service_guide_index():
+    labs = ServiceLab.query.join(ServiceSubLab).join(ServiceAdmin).filter(
+        ServiceAdmin.admin_id == current_user.id)
+    return render_template('service_admin/service_guide_index.html', labs=labs)
+
+
+@service_admin.route('/service_guide/update/<int:lab_id>', methods=['GET', 'POST'])
+def update_service_guide(lab_id):
+    lab = ServiceLab.query.get(lab_id)
+    form = ServiceLabForm(obj=lab)
+    if form.validate_on_submit():
+        form.populate_obj(lab)
+        service_manual_file = request.files.get('service_manual_file')
+        service_rate_file = request.files.get('service_rate_file')
+
+        if service_manual_file and allowed_file(service_manual_file.filename):
+            mime_type = service_manual_file.mimetype
+            file_name = '{}.{}'.format(f'คู่มือการใช้บริการ{lab.lab}', service_manual_file.filename.split('.')[-1])
+            file_data = service_manual_file.stream.read()
+            response = s3.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=file_name,
+                Body=file_data,
+                ContentType=mime_type
+            )
+            lab.service_manual = file_name
+        if service_rate_file and allowed_file(service_rate_file.filename):
+            mime_type = service_rate_file.mimetype
+            file_name = '{}.{}'.format(f'อัตราค่าบริการ{lab.lab}', service_rate_file.filename.split('.')[-1])
+            file_data = service_rate_file.stream.read()
+            response = s3.put_object(
+                Bucket=S3_BUCKET_NAME,
+                Key=file_name,
+                Body=file_data,
+                ContentType=mime_type
+            )
+            lab.service_rate = file_name
+        lab.updater_id = current_user.id
+        lab.updated_at = arrow.now('Asia/Bangkok').datetime
+        db.session.add(lab)
+        db.session.commit()
+        flash('อัปเดตข้อมูลสำเร็จ', 'success')
+        return redirect(url_for('service_admin.service_guide_index'))
+    else:
+        for field, error in form.errors.items():
+            flash(f'{field}: {error}', 'danger')
+    return render_template('service_admin/update_service_guide.html', form=form, lab=lab)
 
 
 @service_admin.context_processor
@@ -1228,6 +1320,39 @@ def create_virus_disinfection_request(request_id=None):
                            form=form, menu=menu, request_id=request_id)
 
 
+@service_admin.route("/request/product_appearance_other")
+def get_product_appearance_other():
+    request_id = request.args.get("request_id")
+    product_appearance = request.args.get("product_appearance")
+    label = 'ระบุ'
+    if request_id:
+        service_request = ServiceRequest.query.get(request_id)
+        if service_request and service_request.data:
+            data = service_request.data
+            product_appearance_other = data.get('product_appearance_other', '')
+        else:
+            product_appearance_other = ''
+    else:
+        product_appearance_other = ''
+    if product_appearance == 'อื่นๆ โปรดระบุ':
+        html = f'''
+            <div class="field">
+                <label class="label">
+                    {label}
+                    <span class="has-text-danger">*</span>
+                </label>
+                <div class="control">
+                    <input name="product_appearance_other" class="input" value="{product_appearance_other}" required 
+                    oninvalid="this.setCustomValidity('กรุณากรอกรายละเอียด')" oninput="this.setCustomValidity('')">
+                </div>
+            </div>
+        '''
+    else:
+        html = '<input type="hidden" name="product_appearance_other" class="input" value="">'
+    resp = make_response(html)
+    return resp
+
+
 @service_admin.route("/request/product_storage")
 def get_product_storage():
     request_id = request.args.get("request_id")
@@ -1251,7 +1376,7 @@ def get_product_storage():
                 </label>
                 <div class="control">
                     <input name="product_storage_other" class="input" value="{product_storage_other}" required 
-                    oninvalid="this.setCustomValidity('กรุณาเลือกการเก็บรักษาผลิตภัณฑ์')" oninput="this.setCustomValidity('')">
+                    oninvalid="this.setCustomValidity('กรุณาเลือกกรอกรายละเอียด')" oninput="this.setCustomValidity('')">
                 </div>
             </div>
         '''
@@ -1261,23 +1386,27 @@ def get_product_storage():
     return resp
 
 
-@service_admin.route('/request/virus_disinfection/condition')
+@service_admin.route('/request/virus_disinfection/condition', methods=['GET', 'POST'])
 def get_virus_disinfection_condition_form():
-    product_type = request.args.get("product_type")
+    product_type = request.values.get("product_type")
     if not product_type:
         return ''
-    form = VirusDisinfectionRequestForm()
+    form = VirusDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
     field_name = f"{product_type}_condition_field"
-    fields = getattr(form, field_name)
+    entry_fields = getattr(form, field_name)
+    entry_fields.append_entry()
+    fields = entry_fields[-1]
+    index = fields.id.replace(f"{field_name}-", "")
     return render_template('service_admin/partials/virus_disinfection_request_condition_form.html',
-                           fields=fields, product_type=product_type)
+                           index=index, fields=fields, product_type=product_type)
 
 
 @service_admin.route('/request/virus_liquid_organism_form_entry/add', methods=['POST'])
 def add_virus_liquid_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.liquid_condition_field.liquid_organism_fields.append_entry()
-    item_form = form.liquid_condition_field.liquid_organism_fields[-1]
+    form.liquid_condition_field[index].liquid_organism_fields.append_entry()
+    item_form = form.liquid_condition_field[index].liquid_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1301,7 +1430,8 @@ def add_virus_liquid_organism_form_entry():
                            item_form.liquid_time_duration(class_='input', required=True,
                                                           oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                           oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_liquid_organism_form_entry', name=item_form.name)
+                           url_for('service_admin.remove_virus_liquid_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1309,24 +1439,26 @@ def add_virus_liquid_organism_form_entry():
 
 @service_admin.route('/request/virus_liquid_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_liquid_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.liquid_condition_field.liquid_organism_fields:
+    for entry in form.liquid_condition_field[index].liquid_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.liquid_condition_field.liquid_organism_fields) > 0:
-        form.liquid_condition_field.liquid_organism_fields.pop_entry()
+    while len(form.liquid_condition_field[index].liquid_organism_fields) > 0:
+        form.liquid_condition_field[index].liquid_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.liquid_condition_field.liquid_organism_fields.append_entry(entry)
+        form.liquid_condition_field[index].liquid_organism_fields.append_entry(entry)
     return ""
 
 
 @service_admin.route('/request/virus_spray_organism_form_entry/add', methods=['POST'])
 def add_virus_spray_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.spray_condition_field.spray_organism_fields.append_entry()
-    item_form = form.spray_condition_field.spray_organism_fields[-1]
+    form.spray_condition_field[index].spray_organism_fields.append_entry()
+    item_form = form.spray_condition_field[index].spray_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1358,7 +1490,8 @@ def add_virus_spray_organism_form_entry():
                            item_form.spray_time_duration(class_='input', required=True,
                                                          oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                          oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_spray_organism_form_entry', name=item_form.name)
+                           url_for('service_admin.remove_virus_spray_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1366,24 +1499,26 @@ def add_virus_spray_organism_form_entry():
 
 @service_admin.route('/request/virus_spray_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_spray_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.spray_condition_field.spray_organism_fields:
+    for entry in form.spray_condition_field[index].spray_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.spray_condition_field.spray_organism_fields) > 0:
-        form.spray_condition_field.spray_organism_fields.pop_entry()
+    while len(form.spray_condition_field[index].spray_organism_fields) > 0:
+        form.spray_condition_field[index].spray_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.spray_condition_field.spray_organism_fields.append_entry(entry)
+        form.spray_condition_field[index].spray_organism_fields.append_entry(entry)
     return ""
 
 
 @service_admin.route('/request/virus_coat_organism_form_entry/add', methods=['POST'])
 def add_virus_coat_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusDisinfectionRequestForm()
-    form.coat_condition_field.coat_organism_fields.append_entry()
-    item_form = form.coat_condition_field.coat_organism_fields[-1]
+    form.coat_condition_field[index].coat_organism_fields.append_entry()
+    item_form = form.coat_condition_field[index].coat_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1405,7 +1540,8 @@ def add_virus_coat_organism_form_entry():
                            item_form.coat_time_duration(class_='input', required=True,
                                                         oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                         oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_coat_organism_form_entry', name=item_form.name)
+                           url_for('service_admin.remove_virus_coat_organism_form_entry', index=index,
+                                   name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1413,16 +1549,17 @@ def add_virus_coat_organism_form_entry():
 
 @service_admin.route('/request/virus_coat_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_coat_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.coat_condition_field.coat_organism_fields:
+    for entry in form.coat_condition_field[index].coat_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.coat_condition_field.coat_organism_fields) > 0:
-        form.coat_condition_field.coat_organism_fields.pop_entry()
+    while len(form.coat_condition_field[index].coat_organism_fields) > 0:
+        form.coat_condition_field[index].coat_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.coat_condition_field.coat_organism_fields.append_entry(entry)
+        form.coat_condition_field[index].coat_organism_fields.append_entry(entry)
     return ""
 
 
@@ -1462,11 +1599,27 @@ def create_virus_air_disinfection_request(request_id=None):
                            form=form, request_id=request_id, menu=menu)
 
 
+@service_admin.route('/request/virus_air_disinfection/condition', methods=['GET', 'POST'])
+def get_virus_air_disinfection_condition_form():
+    product_type = request.values.get("product_type")
+    if not product_type:
+        return ''
+    form = VirusAirDisinfectionRequestForm(formdata=request.form if request.method == 'POST' else None)
+    field_name = f"{product_type}_condition_field"
+    entry_fields = getattr(form, field_name)
+    entry_fields.append_entry()
+    fields = entry_fields[-1]
+    index = fields.id.replace(f"{field_name}-", "")
+    return render_template('service_admin/partials/virus_air_disinfection_request_condition_form.html',
+                           index=index, fields=fields, product_type=product_type)
+
+
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/add', methods=['POST'])
 def add_virus_surface_disinfection_organism_form_entry():
+    index = request.args.get("index", type=int)
     form = VirusAirDisinfectionRequestForm()
-    form.surface_disinfection_condition_field.surface_disinfection_organism_fields.append_entry()
-    item_form = form.surface_disinfection_condition_field.surface_disinfection_organism_fields[-1]
+    form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry()
+    item_form = form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields[-1]
     template = """
         <tr>
             <td style="border: none">
@@ -1489,7 +1642,7 @@ def add_virus_surface_disinfection_organism_form_entry():
                                                                       oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
                                                                       oninput="this.setCustomValidity('')"),
                            url_for('service_admin.remove_virus_surface_disinfection_organism_form_entry',
-                                   name=item_form.name)
+                                   index=index, name=item_form.name)
                            )
     resp = make_response(resp)
     return resp
@@ -1497,16 +1650,17 @@ def add_virus_surface_disinfection_organism_form_entry():
 
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/remove', methods=['DELETE'])
 def remove_virus_surface_disinfection_organism_form_entry():
+    index = request.args.get("index", type=int)
     field_name = request.args.get('name')
     form = VirusAirDisinfectionRequestForm()
     temp_entries = []
-    for entry in form.surface_disinfection_condition_field.surface_disinfection_organism_fields:
+    for entry in form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields:
         if entry.name != field_name:
             temp_entries.append(entry)
-    while len(form.surface_disinfection_condition_field.surface_disinfection_organism_fields) > 0:
-        form.surface_disinfection_condition_field.surface_disinfection_organism_fields.pop_entry()
+    while len(form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields) > 0:
+        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.pop_entry()
     for entry in temp_entries:
-        form.surface_disinfection_condition_field.surface_disinfection_organism_fields.append_entry(entry)
+        form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry(entry)
     return ""
 
 
@@ -3026,9 +3180,8 @@ def edit_customer_address(customer_id=None, address_id=None):
     if form.district.data:
         form.subdistrict.query = form.district.data.subdistricts
     else:
-        province = Province.query.first()
-        form.district.query = province.districts
-        form.subdistrict.query = province.districts[0].subdistricts if province.districts else ''
+        form.district.query = ''
+        form.subdistrict.query = ''
 
     if not form.taxpayer_identification_no.data and (type == 'quotation' or address.address_type == 'quotation'):
         form.taxpayer_identification_no.data = customer.taxpayer_identification_no
@@ -4748,9 +4901,9 @@ def create_customer_address(customer_id=None, address_id=None):
     if form.district.data:
         form.subdistrict.query = form.district.data.subdistricts
     else:
-        province = Province.query.first()
-        form.district.query = province.districts
-        form.subdistrict.query = province.districts[0].subdistricts if province.districts else ''
+        # province = Province.query.first()
+        form.district.query = ''
+        form.subdistrict.query = ''
 
     if not form.taxpayer_identification_no.data:
         form.taxpayer_identification_no.data = customer.taxpayer_identification_no
@@ -4788,14 +4941,16 @@ def get_items():
 
     if trigger == 'province':
         form.district.query = form.province.data.districts
-        district = form.province.data.districts[0] if form.province.data.districts else ''
-        form.subdistrict.query = district.subdistricts if district else ''
+        # district = form.province.data.districts[0] if form.province.data.districts else ''
+        form.subdistrict.query = ''
     elif trigger == 'district' or trigger == 'subdistrict':
         form.district.query = form.province.data.districts
         form.subdistrict.query = form.district.data.subdistricts
         if trigger == 'subdistrict':
             form.zipcode.data = form.subdistrict.data.zip_code
-
+    else:
+        form.district.query = ''
+        form.subdistrict.query = ''
     template = f'''
         {form.province(**{'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items', use_type=use_type)})}
         {form.district(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items', use_type=use_type)})}
@@ -5858,21 +6013,21 @@ def quotation_index():
 @service_admin.route('/quotation/generate')
 @login_required
 def generate_quotation():
-   code = request.args.get('code')
-   menu = request.args.get('menu')
-   request_id = request.args.get('request_id')
-   request_paths = {'bacteria': 'service_admin.generate_bacteria_quotation',
-                    'disinfection': 'service_admin.generate_virus_disinfection_quotation',
-                    'air_disinfection': 'service_admin.generate_virus_air_disinfection_quotation',
-                    'heavymetal': 'service_admin.generate_heavy_metal_quotation',
-                    'foodsafety': 'service_admin.generate_food_safety_quotation',
-                    'protein_identification': 'service_admin.generate_protein_identification_quotation',
-                    'sds_page': 'service_admin.generate_sds_page_quotation',
-                    'quantitative': 'service_admin.generate_quantitative_quotation',
-                    'endotoxin': 'service_admin.generate_endotoxin_quotation',
-                    'toxicology': 'service_admin.generate_toxicology_quotation'
-                    }
-   return redirect(url_for(request_paths[code], menu=menu, request_id=request_id))
+    code = request.args.get('code')
+    menu = request.args.get('menu')
+    request_id = request.args.get('request_id')
+    request_paths = {'bacteria': 'service_admin.generate_bacteria_quotation',
+                     'disinfection': 'service_admin.generate_virus_disinfection_quotation',
+                     'air_disinfection': 'service_admin.generate_virus_air_disinfection_quotation',
+                     'heavymetal': 'service_admin.generate_heavy_metal_quotation',
+                     'foodsafety': 'service_admin.generate_food_safety_quotation',
+                     'protein_identification': 'service_admin.generate_protein_identification_quotation',
+                     'sds_page': 'service_admin.generate_sds_page_quotation',
+                     'quantitative': 'service_admin.generate_quantitative_quotation',
+                     'endotoxin': 'service_admin.generate_endotoxin_quotation',
+                     'toxicology': 'service_admin.generate_toxicology_quotation'
+                     }
+    return redirect(url_for(request_paths[code], menu=menu, request_id=request_id))
 
 
 @service_admin.route('/quotation/bacteria/generate', methods=['GET', 'POST'])
@@ -5994,14 +6149,18 @@ def generate_virus_disinfection_quotation():
         for field in form:
             if field.label.text not in quote_column_names:
                 continue
-            keys = []
-            keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
-            for key in list(itertools.combinations(keys, len(quote_column_names[field.label.text]))):
+
+            required_cols = quote_column_names[field.label.text]
+            records = walk_form_field_records(field, required_cols)
+            for record in records:
+                present_cols = {re.sub(r'_\d+$', '', n) for n, _ in record}
+                if not required_cols.issubset(present_cols):
+                    continue
                 sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
-                sorted_key_ = sorted(''.join([k[1] for k in key]))
+                sorted_key_ = sorted(''.join([v for _, v in record]))
                 p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
                 values = ', '.join(
-                    [f"<i>{k[1]}</i>" if "organism" in k[0] and k[1] != "None" else k[1] for k in key])
+                    [f"<i>{v}</i>" if "organism" in n and v != "None" else v for n, v in record])
                 if p_key in quote_prices:
                     prices = quote_prices[p_key]
                     if p_key in quote_details:
@@ -6082,14 +6241,18 @@ def generate_virus_air_disinfection_quotation():
         for field in form:
             if field.label.text not in quote_column_names:
                 continue
-            keys = []
-            keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
-            for key in list(itertools.combinations(keys, len(quote_column_names[field.label.text]))):
+
+            required_cols = quote_column_names[field.label.text]
+            records = walk_form_field_records(field, required_cols)
+            for record in records:
+                present_cols = {re.sub(r'_\d+$', '', n) for n, _ in record}
+                if not required_cols.issubset(present_cols):
+                    continue
                 sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
-                sorted_key_ = sorted(''.join([k[1] for k in key]))
+                sorted_key_ = sorted(''.join([v for _, v in record]))
                 p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
                 values = ', '.join(
-                    [f"<i>{k[1]}</i>" if "organism" in k[0] and k[1] != "None" else k[1] for k in key])
+                    [f"<i>{v}</i>" if "organism" in n and v != "None" else v for n, v in record])
                 if p_key in quote_prices:
                     prices = quote_prices[p_key]
                     if p_key in quote_details:
@@ -6407,191 +6570,193 @@ def generate_protein_identification_quotation():
 
 @service_admin.route('/quotation/sds_page/generate', methods=['GET', 'POST'])
 def generate_sds_page_quotation():
-   menu = request.args.get('menu')
-   request_id = request.args.get('request_id')
-   service_request = ServiceRequest.query.get(request_id)
-   quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
-   if not quotation:
-       sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-       gc = get_credential()
-       wksp = gc.open_by_key(sheet_price_id)
-       sheet_price = wksp.worksheet(service_request.sub_lab.code)
-       df_price = pandas.DataFrame(sheet_price.get_all_records())
-       quote_column_names = {}
-       quote_details = {}
-       quote_prices = {}
-       data = service_request.data
-       form = SDSPageRequestForm(data=data)
+    menu = request.args.get('menu')
+    request_id = request.args.get('request_id')
+    service_request = ServiceRequest.query.get(request_id)
+    quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
+    if not quotation:
+        sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
+        gc = get_credential()
+        wksp = gc.open_by_key(sheet_price_id)
+        sheet_price = wksp.worksheet(service_request.sub_lab.code)
+        df_price = pandas.DataFrame(sheet_price.get_all_records())
+        quote_column_names = {}
+        quote_details = {}
+        quote_prices = {}
+        data = service_request.data
+        form = SDSPageRequestForm(data=data)
+        for _, row in df_price.iterrows():
+            if row['field_group'] not in quote_column_names:
+                quote_column_names[row['field_group']] = set()
+            for field_name in row['field_name'].split(','):
+                quote_column_names[row['field_group']].add(field_name.strip())
+            sorted_field_group = ''.join(sorted(row['field_group'])).replace(' ', '')
+            key = sorted_field_group + ''.join(sorted(row[4:].str.cat())).replace(' ', '')
+            if service_request.customer.customer_info.type.type == 'หน่วยงานรัฐ':
+                quote_prices[key] = row['government_price']
+            else:
+                quote_prices[key] = row['other_price']
 
-       for _, row in df_price.iterrows():
-           if row['field_group'] not in quote_column_names:
-               quote_column_names[row['field_group']] = set()
-           for field_name in row['field_name'].split(','):
-               quote_column_names[row['field_group']].add(field_name.strip())
-           sorted_field_group = ''.join(sorted(row['field_group'])).replace(' ', '')
-           key = sorted_field_group + ''.join(sorted(row[4:].str.cat())).replace(' ', '')
-           if service_request.customer.customer_info.type.type == 'หน่วยงานรัฐ':
-               quote_prices[key] = row['government_price']
-           else:
-               quote_prices[key] = row['other_price']
+        for field in form:
+            if field.label.text not in quote_column_names:
+                continue
 
-       for field in form:
-           if field.label.text not in quote_column_names:
-               continue
+            keys = []
+            keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
+            for r in range(1, len(quote_column_names[field.label.text]) + 1):
+                for key in itertools.combinations(keys, r):
+                    sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
+                    sorted_key_ = sorted(''.join([k[1] for k in key]))
+                    values = ', '.join([k[1] for k in key])
 
-           keys = []
-           keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
-           for r in range(1, len(quote_column_names[field.label.text]) + 1):
-               for key in itertools.combinations(keys, r):
-                   sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
-                   sorted_key_ = sorted(''.join([k[1] for k in key]))
-                   values = ', '.join([k[1] for k in key])
+                    if field.label.text == 'SDS Page':
+                        p_key = sorted_field_label
+                        counts = re.findall(r'\d+', values)
+                        quantity = int(counts[0])
+                    else:
+                        p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
+                        quantity = None
+                    if p_key in quote_prices:
+                        prices = quote_prices[p_key]
+                        if p_key in quote_details:
+                            quote_details[p_key]["quantity"] += 1
+                        else:
+                            if quantity:
+                                quote_details[p_key] = {"value": f'SDS Page {values}', "price": prices,
+                                                        "quantity": quantity}
+                            else:
+                                quote_details[p_key] = {"value": values, "price": prices, "quantity": 1}
 
-                   if field.label.text == 'SDS Page':
-                       p_key = sorted_field_label
-                       counts = re.findall(r'\d+', values)
-                       quantity = int(counts[0])
-                   else:
-                       p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
-                       quantity = None
-                   if p_key in quote_prices:
-                       prices = quote_prices[p_key]
-                       if p_key in quote_details:
-                           quote_details[p_key]["quantity"] += 1
-                       else:
-                           if quantity:
-                               quote_details[p_key] = {"value": f'SDS Page {values}', "price": prices, "quantity": quantity}
-                           else:
-                               quote_details[p_key] = {"value": values, "price": prices, "quantity": 1}
-
-       quotation_no = ServiceNumberID.get_number('Quotation', db, lab=service_request.sub_lab.ref)
-       quotation = ServiceQuotation(quotation_no=quotation_no.number, request_id=request_id,
-                                    name=service_request.quotation_name,
-                                    address=service_request.quotation_issue_address,
-                                    taxpayer_identification_no=service_request.taxpayer_identification_no,
-                                    creator=current_user, created_at=arrow.now('Asia/Bangkok').datetime)
-       db.session.add(quotation)
-       quotation_no.count += 1
-       status_id = get_status(3)
-       service_request.status_id = status_id
-       db.session.add(service_request)
-       db.session.commit()
-       sequence_no = ServiceSequenceQuotationID.get_number('QT', db, quotation='quotation_' + str(quotation.id))
-       for _, (_, item) in enumerate(quote_details.items()):
-           quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
-                                                 item=item['value'],
-                                                 quantity=item['quantity'],
-                                                 unit_price=item['price'],
-                                                 total_price=int(item['quantity']) * item['price'])
-           sequence_no.count += 1
-           db.session.add(quotation_item)
-           db.session.commit()
-       if service_request.report_languages:
-           for rl in service_request.report_languages:
-               quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
-                                                     item=rl.report_language.item,
-                                                     quantity=1,
-                                                     unit_price=rl.report_language.price,
-                                                     total_price=rl.report_language.price)
-               sequence_no.count += 1
-               db.session.add(quotation_item)
-               db.session.commit()
-       flash('ร่างใบเสนอราคาสำเร็จ กรุณาดำเนินการตรวจสอบข้อมูล', 'success')
-       return redirect(
-           url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
-   else:
-       return render_template('service_admin/quotation_created_confirmation_page.html',
-                              quotation_id=quotation.id, request_no=service_request.request_no, menu=menu)
+        quotation_no = ServiceNumberID.get_number('Quotation', db, lab=service_request.sub_lab.ref)
+        quotation = ServiceQuotation(quotation_no=quotation_no.number, request_id=request_id,
+                                     name=service_request.quotation_name,
+                                     address=service_request.quotation_issue_address,
+                                     taxpayer_identification_no=service_request.taxpayer_identification_no,
+                                     creator=current_user, created_at=arrow.now('Asia/Bangkok').datetime)
+        db.session.add(quotation)
+        quotation_no.count += 1
+        status_id = get_status(3)
+        service_request.status_id = status_id
+        db.session.add(service_request)
+        db.session.commit()
+        sequence_no = ServiceSequenceQuotationID.get_number('QT', db, quotation='quotation_' + str(quotation.id))
+        for _, (_, item) in enumerate(quote_details.items()):
+            quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
+                                                  item=item['value'],
+                                                  quantity=item['quantity'],
+                                                  unit_price=item['price'],
+                                                  total_price=int(item['quantity']) * item['price'])
+            sequence_no.count += 1
+            db.session.add(quotation_item)
+            db.session.commit()
+        if service_request.report_languages:
+            for rl in service_request.report_languages:
+                quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
+                                                      item=rl.report_language.item,
+                                                      quantity=1,
+                                                      unit_price=rl.report_language.price,
+                                                      total_price=rl.report_language.price)
+                sequence_no.count += 1
+                db.session.add(quotation_item)
+                db.session.commit()
+        flash('ร่างใบเสนอราคาสำเร็จ กรุณาดำเนินการตรวจสอบข้อมูล', 'success')
+        return redirect(
+            url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
+    else:
+        return render_template('service_admin/quotation_created_confirmation_page.html',
+                               quotation_id=quotation.id,
+                               request_no=service_request.request_no,
+                               menu=menu)
 
 
 @service_admin.route('/quotation/quantitative/generate', methods=['GET', 'POST'])
 def generate_quantitative_quotation():
-   menu = request.args.get('menu')
-   request_id = request.args.get('request_id')
-   service_request = ServiceRequest.query.get(request_id)
-   quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
-   if not quotation:
-       sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-       gc = get_credential()
-       wksp = gc.open_by_key(sheet_price_id)
-       sheet_price = wksp.worksheet(service_request.sub_lab.code)
-       df_price = pandas.DataFrame(sheet_price.get_all_records())
-       quote_column_names = {}
-       quote_details = {}
-       quote_prices = {}
-       data = service_request.data
-       form = QuantitativeRequestForm(data=data)
+    menu = request.args.get('menu')
+    request_id = request.args.get('request_id')
+    service_request = ServiceRequest.query.get(request_id)
+    quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
+    if not quotation:
+        sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
+        gc = get_credential()
+        wksp = gc.open_by_key(sheet_price_id)
+        sheet_price = wksp.worksheet(service_request.sub_lab.code)
+        df_price = pandas.DataFrame(sheet_price.get_all_records())
+        quote_column_names = {}
+        quote_details = {}
+        quote_prices = {}
+        data = service_request.data
+        form = QuantitativeRequestForm(data=data)
+        for _, row in df_price.iterrows():
+            if row['field_group'] not in quote_column_names:
+                quote_column_names[row['field_group']] = set()
+            for field_name in row['field_name'].split(','):
+                quote_column_names[row['field_group']].add(field_name.strip())
+            sorted_field_group = ''.join(sorted(row['field_group'])).replace(' ', '')
+            key = sorted_field_group + ''.join(sorted(row[4:].str.cat())).replace(' ', '')
+            if service_request.customer.customer_info.type.type == 'หน่วยงานรัฐ':
+                quote_prices[key] = row['government_price']
+            else:
+                quote_prices[key] = row['other_price']
 
-       for _, row in df_price.iterrows():
-           if row['field_group'] not in quote_column_names:
-               quote_column_names[row['field_group']] = set()
-           for field_name in row['field_name'].split(','):
-               quote_column_names[row['field_group']].add(field_name.strip())
-           sorted_field_group = ''.join(sorted(row['field_group'])).replace(' ', '')
-           key = sorted_field_group + ''.join(sorted(row[4:].str.cat())).replace(' ', '')
-           if service_request.customer.customer_info.type.type == 'หน่วยงานรัฐ':
-               quote_prices[key] = row['government_price']
-           else:
-               quote_prices[key] = row['other_price']
+        for field in form:
+            if field.label.text not in quote_column_names:
+                continue
 
-       for field in form:
-           if field.label.text not in quote_column_names:
-               continue
+            keys = []
+            keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
+            for r in range(1, len(quote_column_names[field.label.text]) + 1):
+                for key in itertools.combinations(keys, r):
+                    sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
+                    sorted_key_ = sorted(''.join([k[1] for k in key]))
+                    values = ', '.join([k[1] for k in key])
+                    p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
 
-           keys = []
-           keys = walk_form_fields(field, quote_column_names[field.label.text], keys=keys)
-           for r in range(1, len(quote_column_names[field.label.text]) + 1):
-               for key in itertools.combinations(keys, r):
-                   sorted_field_label = ''.join(sorted(field.label.text)).replace(' ', '')
-                   sorted_key_ = sorted(''.join([k[1] for k in key]))
-                   values = ', '.join([k[1] for k in key])
-                   p_key = sorted_field_label + ''.join(sorted_key_).replace(' ', '')
+                    if p_key in quote_prices:
+                        prices = quote_prices[p_key]
+                        if p_key in quote_details:
+                            quote_details[p_key]["quantity"] += 1
+                        else:
+                            quote_details[p_key] = {"value": values, "price": prices, "quantity": 1}
 
-                   if p_key in quote_prices:
-                       prices = quote_prices[p_key]
-                       if p_key in quote_details:
-                           quote_details[p_key]["quantity"] += 1
-                       else:
-                           quote_details[p_key] = {"value": values, "price": prices, "quantity": 1}
+        quotation_no = ServiceNumberID.get_number('Quotation', db, lab=service_request.sub_lab.ref)
+        quotation = ServiceQuotation(quotation_no=quotation_no.number, request_id=request_id,
+                                     name=service_request.quotation_name,
+                                     address=service_request.quotation_issue_address,
+                                     taxpayer_identification_no=service_request.taxpayer_identification_no,
+                                     creator=current_user, created_at=arrow.now('Asia/Bangkok').datetime)
+        db.session.add(quotation)
+        quotation_no.count += 1
+        status_id = get_status(3)
+        service_request.status_id = status_id
+        db.session.add(service_request)
+        db.session.commit()
+        sequence_no = ServiceSequenceQuotationID.get_number('QT', db, quotation='quotation_' + str(quotation.id))
+        for _, (_, item) in enumerate(quote_details.items()):
+            quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
+                                                  item=item['value'],
+                                                  quantity=item['quantity'],
+                                                  unit_price=item['price'],
+                                                  total_price=int(item['quantity']) * item['price'])
+            sequence_no.count += 1
+            db.session.add(quotation_item)
+            db.session.commit()
+        if service_request.report_languages:
+            for rl in service_request.report_languages:
+                quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
+                                                      item=rl.report_language.item,
+                                                      quantity=1,
+                                                      unit_price=rl.report_language.price,
+                                                      total_price=rl.report_language.price)
+                sequence_no.count += 1
+                db.session.add(quotation_item)
+                db.session.commit()
+        flash('ร่างใบเสนอราคาสำเร็จ กรุณาดำเนินการตรวจสอบข้อมูล', 'success')
+        return redirect(
+            url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
 
-       quotation_no = ServiceNumberID.get_number('Quotation', db, lab=service_request.sub_lab.ref)
-       quotation = ServiceQuotation(quotation_no=quotation_no.number, request_id=request_id,
-                                    name=service_request.quotation_name,
-                                    address=service_request.quotation_issue_address,
-                                    taxpayer_identification_no=service_request.taxpayer_identification_no,
-                                    creator=current_user, created_at=arrow.now('Asia/Bangkok').datetime)
-       db.session.add(quotation)
-       quotation_no.count += 1
-       status_id = get_status(3)
-       service_request.status_id = status_id
-       db.session.add(service_request)
-       db.session.commit()
-       sequence_no = ServiceSequenceQuotationID.get_number('QT', db, quotation='quotation_' + str(quotation.id))
-       for _, (_, item) in enumerate(quote_details.items()):
-           quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
-                                                 item=item['value'],
-                                                 quantity=item['quantity'],
-                                                 unit_price=item['price'],
-                                                 total_price=int(item['quantity']) * item['price'])
-           sequence_no.count += 1
-           db.session.add(quotation_item)
-           db.session.commit()
-       if service_request.report_languages:
-           for rl in service_request.report_languages:
-               quotation_item = ServiceQuotationItem(sequence=sequence_no.number, quotation_id=quotation.id,
-                                                     item=rl.report_language.item,
-                                                     quantity=1,
-                                                     unit_price=rl.report_language.price,
-                                                     total_price=rl.report_language.price)
-               sequence_no.count += 1
-               db.session.add(quotation_item)
-               db.session.commit()
-       flash('ร่างใบเสนอราคาสำเร็จ กรุณาดำเนินการตรวจสอบข้อมูล', 'success')
-       return redirect(
-           url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
-   else:
-       return render_template('service_admin/quotation_created_confirmation_page.html',
-                              quotation_id=quotation.id, request_no=service_request.request_no, menu=menu)
+    else:
+        return render_template('service_admin/quotation_created_confirmation_page.html',
+                               quotation_id=quotation.id, request_no=service_request.request_no, menu=menu)
 
 
 @service_admin.route('/quotation/endotoxin/generate', methods=['GET', 'POST'])

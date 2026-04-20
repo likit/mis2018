@@ -14,6 +14,7 @@ with app.app_context():
         it_role = Role.query.filter_by(role_need='it', action_need=None, resource_id=None).first()
         admin_role = Role.query.filter_by(role_need='admin', action_need=None, resource_id=None).first()
         hr_role = Role.query.filter_by(role_need='hr', action_need=None, resource_id=None).first()
+        hr_pa_role = Role.query.filter_by(role_need='hr_pa', action_need=None, resource_id=None).first()
         hr_confidential_role = Role.query.filter_by(role_need='hr_confidential', action_need=None, resource_id=None).first()
         finance_role = Role.query.filter_by(role_need='finance', action_need=None, resource_id=None).first()
         procurement_role = Role.query.filter_by(role_need='procurement', action_need=None, resource_id=None).first()
@@ -24,6 +25,7 @@ with app.app_context():
         head_finance_role = Role.query.filter_by(role_need='head_finance', action_need=None, resource_id=None).first()
         manager_role = Role.query.filter_by(role_need='manager', action_need=None, resource_id=None).first()
         secretary_role = Role.query.filter_by(role_need='secretary', action_need=None, resource_id=None).first()
+        event_staff = Role.query.filter_by(role_need='event_staff', action_need=None, resource_id=None).first()
         center_standardization_product_validation_role = Role.query.filter_by(role_need='center_standardization_product_validation',
                                                                               action_need=None, resource_id=None).first()
         continuing_edu_admin_role = Role.query.filter_by(role_need='continuing_edu_admin', 
@@ -34,6 +36,7 @@ with app.app_context():
         admin_role = None
         it_role = None
         hr_role = None
+        hr_pa_role = None
         hr_confidential_role = None
         finance_role = None
         procurement_role = None
@@ -42,6 +45,7 @@ with app.app_context():
         head_finance_role = None
         manager_role = None
         secretary_role = None
+        event_staff =  None
         center_standardization_product_validation_role = None
         continuing_edu_admin_role = None
 
@@ -49,6 +53,7 @@ with app.app_context():
     admin_permission = Permission() if not admin_role else Permission(admin_role.to_tuple())
     it_permission = Permission() if not it_role else Permission(it_role.to_tuple())
     hr_permission = Permission() if not hr_role else Permission(hr_role.to_tuple())
+    hr_pa = Permission() if not hr_pa_role else Permission(hr_pa_role.to_tuple())
     hr_confidential = Permission() if not hr_confidential_role else Permission(hr_confidential_role.to_tuple())
     finance_permission = Permission() if not finance_role else Permission(finance_role.to_tuple())
     procurement_permission = Permission() if not procurement_role else Permission(procurement_role.to_tuple())
@@ -59,6 +64,7 @@ with app.app_context():
     finance_head_permission = Permission() if not head_finance_role else Permission(head_finance_role.to_tuple())
     manager_permission = Permission() if not manager_role else Permission(manager_role.to_tuple())
     secretary_permission = Permission() if not secretary_role else Permission(secretary_role.to_tuple())
+    event_staff_permission = Permission() if not event_staff else Permission(event_staff.to_tuple())
     center_standardization_product_validation_permission = Permission() if not \
         center_standardization_product_validation_role else \
         Permission(center_standardization_product_validation_role.to_tuple())

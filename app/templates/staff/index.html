@@ -153,6 +153,17 @@
                 </a>
             </nav>
             {% endif %}
+            {% if event_staff_permission.can() %}
+            <nav class="panel is-success">
+                <p class="panel-heading">สำหรับผู้จัดงาน</p>
+                <a href="{{ url_for('staff.seminar_pre_register_records') }}" class="panel-block">
+                        <span class="panel-icon">
+                            <i class="fas fa-user-circle"></i>
+                        </span>
+                    <span class="is-size-5">ข้อมูลลงทะเบียนล่วงหน้า</span><br>
+                </a>
+            </nav>
+            {% endif %}
             <nav class="panel is-danger">
                 <p class="panel-heading">อยู่ระหว่างการทดสอบ</p>
                 <a href="{{ url_for('doc.index') }}" class="panel-block">

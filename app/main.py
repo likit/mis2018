@@ -964,6 +964,7 @@ admin.add_views(ModelView(SoftwareRequestSystem, db.session, category='Software 
 admin.add_views(ModelView(SoftwareRequestDetail, db.session, category='Software Request'))
 admin.add_views(ModelView(SoftwareRequestTimeline, db.session, category='Software Request'))
 admin.add_views(ModelView(SoftwareIssues, db.session, category='Software Request'))
+admin.add_views(ModelView(SoftwareRequestTestResult, db.session, category='Software Request'))
 
 from app.models import Dataset, DataFile
 

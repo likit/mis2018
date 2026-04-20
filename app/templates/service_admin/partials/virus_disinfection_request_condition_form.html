@@ -14,7 +14,7 @@
                                     {% if _field.type != 'CSRFTokenField' %}
                                         {% if _field.type == 'SelectField' %}
                                             <th style="border: none; width: 16.5em">
-                                                {% else %}
+                                        {% else %}
                                             <th style="border: none">
                                         {% endif %}
                                         {{ _field.label.text }}
@@ -44,19 +44,19 @@
                                     {% endif %}
                                 {% endfor %}
                                 <td style="border: none">
-                                    {% if fields.name == 'liquid_condition_field' %}
+                                    {% if product_type == 'liquid' %}
                                         <a class="button is-danger is-outlined"
                                            hx-delete="{{ url_for('service_admin.remove_virus_liquid_organism_form_entry',
-                                               name=subform.name) }}"
+                                               index=index, name=subform.name) }}"
                                            hx-target="closest tr"
                                            hx-swap="outerHTML"
                                         >
                                             <span class="icon"><i class="fas fa-trash-alt"></i></span>
                                         </a>
-                                    {% elif fields.name == 'spray_condition_field' %}
+                                    {% elif product_type == 'spray' %}
                                         <a class="button is-danger is-outlined"
                                            hx-delete="{{ url_for('service_admin.remove_virus_spray_organism_form_entry',
-                                               name=subform.name) }}"
+                                               index=index, name=subform.name) }}"
                                            hx-target="closest tr"
                                            hx-swap="outerHTML"
                                         >
@@ -65,7 +65,7 @@
                                     {% else %}
                                         <a class="button is-danger is-outlined"
                                            hx-delete="{{ url_for('service_admin.remove_virus_coat_organism_form_entry',
-                                               name=subform.name) }}"
+                                               index=index, name=subform.name) }}"
                                            hx-target="closest tr"
                                            hx-swap="outerHTML"
                                         >
@@ -77,18 +77,20 @@
                         {% endfor %}
                         <tr>
                             <td style="border: none">
-                                {% if fields.name == 'liquid_condition_field' %}
+                                {% if product_type == 'liquid' %}
                                     <a class="button is-info is-outlined is-rounded"
-                                       hx-post="{{ url_for('service_admin.add_virus_liquid_organism_form_entry') }}"
+                                       hx-post="{{ url_for('service_admin.add_virus_liquid_organism_form_entry',
+                                       index=index) }}"
                                        hx-target="previous tr"
                                        hx-swap="afterend"
                                     >
                                         <span class="icon"><i class="fas fa-plus"></i></span>
                                         <span>เพิ่ม</span>
                                     </a>
-                                {% elif fields.name == 'spray_condition_field' %}
+                                {% elif product_type == 'spray' %}
                                     <a class="button is-info is-outlined is-rounded"
-                                       hx-post="{{ url_for('service_admin.add_virus_spray_organism_form_entry') }}"
+                                       hx-post="{{ url_for('service_admin.add_virus_spray_organism_form_entry',
+                                       index=index) }}"
                                        hx-target="previous tr"
                                        hx-swap="afterend"
                                     >
@@ -97,7 +99,8 @@
                                     </a>
                                 {% else %}
                                     <a class="button is-info is-outlined is-rounded"
-                                       hx-post="{{ url_for('service_admin.add_virus_coat_organism_form_entry') }}"
+                                       hx-post="{{ url_for('service_admin.add_virus_coat_organism_form_entry',
+                                       index=index) }}"
                                        hx-target="previous tr"
                                        hx-swap="afterend"
                                     >
