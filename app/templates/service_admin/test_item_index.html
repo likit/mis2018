@@ -103,6 +103,7 @@
                     url: {{ url_for('service_admin.test_item_index', tab=tab, api='true')|tojson|safe}},
                 },
                 order: [[1, 'desc']],
+                scrollX: true,
                 columns: [
                     {
                         data: 'request_id',

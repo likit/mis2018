@@ -26,24 +26,42 @@
                                 <a href="{{ url_for('comp_tracker.admin_index', tab='new') }}">
                                     <span class="icon is-small"><i class="fas fa-ban"></i></span>
                                     <span>ยังไม่ดำเนินการ</span>
+                                    {% if new_record_count > 0 %}
+                                        <span class="tag is-danger is-rounded is-size-7 ml-1">{{ new_record_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             <li {% if tab == 'pending' %}class="is-active"{% endif %}>
                                 <a href="{{ url_for('comp_tracker.admin_index', tab='pending') }}">
                                     <span class="icon is-small"><i class="fas fa-hourglass-half"></i></span>
                                     <span>รอดำเนินการ</span>
+                                    {% if pending_record_count > 0 %}
+                                        <span class="tag is-danger is-rounded is-size-7 ml-1">{{ pending_record_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             <li {% if tab == 'progress' %}class="is-active"{% endif %}>
                                 <a href="{{ url_for('comp_tracker.admin_index', tab='progress') }}">
                                     <span class="icon is-small"><i class="fas fa-history"></i></span>
                                     <span>อยู่ระหว่างดำเนินการ</span>
+                                    {% if progress_record_count > 0 %}
+                                        <span class="tag is-danger is-rounded is-size-7 ml-1">{{ progress_record_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             <li {% if tab == 'completed' %}class="is-active"{% endif %}>
                                 <a href="{{ url_for('comp_tracker.admin_index', tab='completed') }}">
                                     <span class="icon is-small"><i class="fas fa-check"></i></span>
                                     <span>ดำเนินการเสร็จสิ้น</span>
+                                </a>
+                            </li>
+                            <li {% if tab == 'repair_approval' %}class="is-active"{% endif %}>
+                                <a href="{{ url_for('comp_tracker.admin_index', tab='repair_approval') }}">
+                                    <span class="icon is-small"><i class="fas fa-file-pdf"></i></span>
+                                    <span>ใบอนุมัติหลักการซ่อม</span>
+                                        {% if repair_approval_count > 0 %}
+                                        <span class="tag is-danger is-rounded is-size-7 ml-1">{{ repair_approval_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                         </ul>
@@ -64,11 +82,12 @@
                             <th>วันที่สร้าง</th>
                             <th>ระดับความรุนแรง</th>
                             <th>สถานะ</th>
+                            <th>ใบอนุมัติหลักการซ่อม</th>
                             <th>ตรวจสอบ</th>
                             </thead>
                             <tbody>
                                 {% if records %}
-                                    {% for record in records|sort(attribute='created_at', reverse = True) %}
+                                    {% for record in records %}
                                         <tr>
 {#                                            <td>#}
 {#                                                <input class="is-checkradio" id="{{ record.id }}" type="checkbox" name="selected_items" value="{{ record.id }}">#}
@@ -121,6 +140,21 @@
                                                 {% endif %}
                                             </td>
                                             <td>
+                                                {% if record.repair_approvals %}
+                                                     {% if record.get_print_of_repair_approval == True %}
+                                                         <span class="tag is-success is-light">
+                                                             <span class="icon"><i class="fas fa-check"></i></span>
+                                                             <span>ออกเอกสารแล้ว</span>
+                                                         </span>
+                                                     {% else %}
+                                                         <span class="tag is-danger is-light">
+                                                             <span class="icon"><i class="fas fa-times"></i></span>
+                                                             <span>ยังไม่ออกเอกสาร</span>
+                                                         </span>
+                                                     {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
                                                 <a href="{{ url_for('comp_tracker.edit_record_admin', record_id=record.id, tab=tab) }}">
                                                     <span class="icon">
                                                         <i class="fas fa-search"></i>
@@ -143,7 +177,7 @@
     <script>
         $(document).ready(function () {
             $('#records').DataTable({
-                order: [[6, 'desc']],
+                order: [[0, 'desc']],
             })
         });
     </script>

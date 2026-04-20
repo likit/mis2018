@@ -66,3 +66,8 @@ class SoftwareRequestIssueForm(ModelForm):
                           default='Draft',
                           choices=[(c,c) for c in ('Draft', 'Working', 'Cancelled', 'Closed')])
     staff = QuerySelectField('ผู้รับผิดชอบ', query_factory=lambda: StaffAccount.get_it_unit(), get_label='fullname')
+
+
+class SoftwareRequestTestResultForm(ModelForm):
+    class Meta:
+        model = SoftwareRequestTestResult

@@ -132,7 +132,7 @@ def index():
 
 
 @complaint_tracker.route('/issue/<int:topic_id>', methods=['GET', 'POST'])
-def new_record(topic_id, room=None, procurement=None):
+def dnew_recor(topic_id, room=None, procurement=None):
     topic = ComplaintTopic.query.get(topic_id)
     ComplaintRecordForm = create_record_form(record_id=None, topic_id=topic_id)
     form = ComplaintRecordForm()
@@ -154,6 +154,11 @@ def new_record(topic_id, room=None, procurement=None):
         file = form.file_upload.data
         record.topic = topic
         record.created_at = arrow.now('Asia/Bangkok').datetime
+        if (topic.code == 'runied' and procurement and
+                (not form.cost_center.data or not form.io_code.data or not form.product_code.data)):
+            flash('กรุณากรอกข้อมูลให้ครบถ้วน', 'danger')
+            return render_template('complaint_tracker/record_form.html', form=form, topic=topic, room=room,
+                                   is_admin=is_admin, procurement=procurement)
         if current_user.is_authenticated:
             record.complainant = current_user
         if file and allowed_file(file.filename):
@@ -292,11 +297,27 @@ def admin_index():
     admins = ComplaintAdmin.query.filter_by(admin=current_user)
     coordinators = ComplaintCoordinator.query.filter_by(coordinator=current_user)
     records = []
+    new_record_count = 0
+    pending_record_count = 0
+    progress_record_count = 0
+    repair_approval_count = 0
 
     for admin in admins:
         if admin.investigators:
             for investigator in admin.investigators:
+                if investigator.record.status is None:
+                    new_record_count += 1
+                elif investigator.record.status.code == 'pending':
+                    pending_record_count += 1
+                elif investigator.record.status.code == 'progress':
+                    progress_record_count += 1
+
+                if investigator.record.repair_approvals and investigator.record.get_print_of_repair_approval == False:
+                    repair_approval_count += 1
+
                 if tab == 'new' and investigator.record.status is None:
+                    records.append(investigator.record)
+                elif tab == 'repair_approval' and investigator.record.repair_approvals:
                     records.append(investigator.record)
                 else:
                     rec = investigator.get_record_by_status(tab)
@@ -305,201 +326,46 @@ def admin_index():
 
         if admin.topic.records:
             for record in admin.topic.records:
+                if record.status is None:
+                    new_record_count += 1
+                elif record.status.code == 'pending':
+                    pending_record_count += 1
+                elif record.status.code == 'progress':
+                    progress_record_count += 1
+
+                if record.repair_approvals and record.get_print_of_repair_approval == False:
+                    repair_approval_count += 1
+
                 if tab == 'new' and record.status is None:
+                    records.append(record)
+                elif tab == 'repair_approval' and record.repair_approvals:
                     records.append(record)
                 else:
                     rec = record.get_record_by_status(tab)
                     if rec:
                         records.append(rec)
     for c in coordinators:
+        if c.record.status is None:
+            new_record_count += 1
+        elif c.record.status.code == 'pending':
+            pending_record_count += 1
+        elif c.record.status.code == 'progress':
+            progress_record_count += 1
+
+        if c.record.repair_approvals and c.record.get_print_of_repair_approval == False:
+            repair_approval_count += 1
+
         if tab == 'new' and c.record.status is None:
+            records.append(c.record)
+        elif tab == 'repair_approval' and c.record.repair_approvals:
             records.append(c.record)
         else:
             rec = c.get_record_by_status(tab)
             if rec:
                 records.append(rec)
-
-    def all_page_setup(canvas, doc):
-        canvas.saveState()
-        canvas.restoreState()
-
-    if request.method == "POST":
-        doc = SimpleDocTemplate('app/complaint.pdf',
-                                pagesize=A4,
-                                rightMargin=30,
-                                leftMargin=30,
-                                topMargin=20,
-                                bottomMargin=30
-                                )
-        data = []
-
-        header_style = ParagraphStyle(
-            name="Header",
-            parent=style_sheet['ThaiStyleBold'],
-            fontSize=20,
-            alignment=1,
-            spaceAfter=12
-        )
-
-        label_style = ParagraphStyle(
-            name="Label",
-            parent=style_sheet['ThaiStyleBold'],
-            fontSize=16
-        )
-
-        value_style = ParagraphStyle(
-            name="Value",
-            parent=style_sheet['ThaiStyle'],
-            fontSize=16
-        )
-
-        for item_id in request.form.getlist('selected_items'):
-            item = ComplaintRecord.query.get(int(item_id))
-            name = item.complainant.fullname if item.complainant else item.fl_name if item.fl_name else '-'
-            if item.rooms or item.room:
-                title = 'ห้อง :'
-                if item.room:
-                    if item.room.desc:
-                        room = f'''{item.room.number} {item.room.location} ({item.room.desc})'''
-                    else:
-                        room = f'''{item.room.number} {item.room.location}'''
-                else:
-                    for r in item.rooms:
-                        if r.desc:
-                            room = f'''{r.number} {r.location} ({r.desc})'''
-                        else:
-                            room = f'''{r.number} {r.location}'''
-                col_Widths = [55, 445]
-            elif item.procurement_location:
-                title = 'สถานที่ตั้งครุภัณฑ์ปัจจุบัน :'
-                if item.procurement_location.desc:
-                    room = f'''{item.procurement_location.number} {item.procurement_location.location} ({item.procurement_location.desc})'''
-                else:
-                    room = f'''{item.procurement_location.number} {item.procurement_location.location}'''
-                col_Widths = [140, 360]
-            else:
-                room = '-'
-                col_Widths = [55, 445]
-            header = [
-                [Paragraph('รายละเอียดหมวดหมู่', style=label_style)],
-                [Paragraph("หมวด :", style=label_style), Paragraph(item.topic.category.category, style=value_style)],
-                [Paragraph("หัวข้อ :", style=label_style), Paragraph(item.topic.topic, style=value_style)],
-                [Paragraph(title, style=label_style), Paragraph(room, style=value_style)],
-            ]
-
-            header_table = Table(header, colWidths=col_Widths)
-            header_table.setStyle(TableStyle([
-                ('SPAN', (0, 0), (1, 0)),
-                ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, -1), (-1, -1), 15)
-            ]))
-
-            data.append(KeepTogether(Paragraph("ใบแจ้งปัญหา / COMPLAINT FORM", style=header_style)))
-            data.append(KeepTogether(Spacer(1, 8)))
-            data.append(KeepTogether(header_table))
-
-            if item.procurements:
-                for p in item.procurements:
-                    for r in p.records:
-                        if r.location:
-                            if r.location.desc:
-                                location = f'''{r.location.number} {r.location.location} ({r.location.desc})'''
-                            else:
-                                location = f'''{r.location.number} {r.location.location}'''
-                        else:
-                            location = '-'
-                    procurement = [
-                        [Paragraph('รายละเอียดครุภัณฑ์', style=label_style)],
-                        [Paragraph("ชื่อครุภัณฑ์ :", style=label_style), Paragraph(p.name, style=value_style)],
-                        [Paragraph("หมวดหมู่/ประเภท :", style=label_style),
-                         Paragraph(p.category.category, style=value_style)],
-                        [Paragraph("สถานที่ติดตั้ง :", style=label_style), Paragraph(location, style=value_style)],
-                        [Paragraph("เลขครุภัณฑ์ :", style=label_style), Paragraph(p.procurement_no, style=value_style)],
-                        [Paragraph("ภาควิชา/หน่วยงาน :", style=label_style), Paragraph(p.org.name, style=value_style)],
-                    ]
-
-                    procurement_table = Table(procurement, colWidths=[115, 385])
-                    procurement_table.setStyle(TableStyle([
-                        ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                        ('SPAN', (0, 0), (1, 0)),
-                        ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                        ('TOPPADDING', (0, 0), (-1, -1), 6),
-                        ('BOTTOMPADDING', (0, -1), (-1, -1), 15)
-                    ]))
-
-                    data.append(KeepTogether(procurement_table))
-
-            created_at = arrow.get(item.created_at.astimezone(localtz)).format(fmt='วันที่ DD MMMM YYYY เวลา HH:mm',
-                                                                               locale='th-th')
-
-            complainant = [
-                [Paragraph('รายละเอียดผู้แจ้ง', style=label_style)],
-                [Paragraph("ผู้แจ้ง :", style=label_style), Paragraph(name, style=value_style)],
-                [Paragraph("วันที่แจ้ง :", style=label_style), Paragraph(created_at, style=value_style)]
-            ]
-
-            complainant_table = Table(complainant, colWidths=[65, 435])
-            complainant_table.setStyle(TableStyle([
-                ('SPAN', (0, 0), (1, 0)),
-                ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, -1), (-1, -1), 15)
-            ]))
-
-            desc_title = Paragraph("รายละเอียดปัญหา", style=label_style)
-            desc_text = Paragraph(item.desc or "-", style=value_style)
-
-            desc_table = Table([[desc_title], [desc_text]], colWidths=[500])
-            desc_table.setStyle(TableStyle([
-                ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
-            ]))
-
-            status = [
-                [Paragraph('สถานะ', style=label_style)],
-                [Paragraph('☐ รับเรื่อง/รอดำเนินการ', style=value_style)],
-                [Paragraph('☐ อยู่ระหว่างดำเนินการ', style=value_style)],
-                [Paragraph('☐ ดำเนินการเสร็จสิ้น', style=value_style)]
-            ]
-
-            status_table = Table(status, colWidths=[500])
-            status_table.setStyle(TableStyle([
-                ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, -1), (-1, -1), 15)
-            ]))
-
-            report = [
-                [Paragraph('รายงานผลการดำเนินงาน', style=label_style)],
-                [Paragraph("." * 185, style=value_style) for _ in range(3)]
-            ]
-            report_table = Table([[r] for r in report], colWidths=[500])
-            report_table.setStyle(TableStyle([
-                ('BOX', (0, 0), (-1, -1), 1.2, colors.black),
-                ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, -1), (-1, -1), 15)
-            ]))
-
-            data.append(KeepTogether(complainant_table))
-            data.append(KeepTogether(desc_table))
-            data.append(KeepTogether(status_table))
-            data.append(KeepTogether(report_table))
-            data.append(PageBreak())
-        doc.build(data, onLaterPages=all_page_setup, onFirstPage=all_page_setup)
-        return send_file('complaint.pdf')
-    return render_template('complaint_tracker/admin_index.html', records=records, tab=tab)
+    return render_template('complaint_tracker/admin_index.html', records=records, tab=tab,
+                           new_record_count=new_record_count, pending_record_count=pending_record_count,
+                           progress_record_count=progress_record_count, repair_approval_count=repair_approval_count)
 
 
 @complaint_tracker.route('/topics/<code>')
@@ -967,32 +833,63 @@ def repair_approval(record_id, repair_approval_id=None):
         form = ComplaintRepairApprovalForm(obj=rep_approval)
     else:
         form = ComplaintRepairApprovalForm()
+
     org = Org.query.filter_by(name=current_user.personal_info.org.name).first()
     staff = StaffAccount.query.filter_by(email=org.head).first()
     form.name.data = staff.fullname
     form.position.data = f"หัวหน้า{staff.personal_info.org.name}"
+
+    if not form.cost_center.data and record.cost_center:
+        form.cost_center.data = record.cost_center
+
+    if not form.io_code.data and record.io_code:
+        form.io_code.data = record.io_code
+
+    if not form.product_code.data and record.product_code:
+        form.product_code.data = record.product_code
+
     if staff.personal_info.org.parent and staff.personal_info.org.parent.parent:
         form.organization.data = f'{staff.personal_info.org.name} {staff.personal_info.org.parent} {staff.personal_info.org.parent.parent}'
     elif staff.personal_info.org.parent and not staff.personal_info.org.parent.parent:
         form.organization.data = f'{staff.personal_info.org.name} {staff.personal_info.org.parent}'
     else:
         form.organization.data = staff.personal_info.org.name
+
     if record.procurements and not form.item.data:
         for procurement in record.procurements:
             form.item.data = f'เลขครุภัณฑ์ {procurement.procurement_no} {procurement.name}'
+
     if form.validate_on_submit():
         if not repair_approval_id:
             rep_approval = ComplaintRepairApproval()
         form.populate_obj(rep_approval)
+
+        if not form.repair_type.data:
+            flash('กรุณาเลือกประเภทใบอนุมัติหลักการซ่อม', 'danger')
+            return render_template('complaint_tracker/repair_approval_form.html', form=form,
+                                   record_id=record_id, repair_approval_id=repair_approval_id)
+        elif form.repair_type.data == 'ไม่เร่งด่วน (ซื้อ/จ้าง)' and not form.principle_approval_type.data:
+            flash('กรุณาเลือกประเภทการขออนุมัติ', 'danger')
+            return render_template('complaint_tracker/repair_approval_form.html', form=form,
+                                   record_id=record_id, repair_approval_id=repair_approval_id)
+
         rep_approval.receipt_date = arrow.get(form.receipt_date.data,
                                               'Asia/Bangkok').date() if form.receipt_date.data else None
         if not repair_approval_id:
             rep_approval.record_id = record_id
             rep_approval.created_at = arrow.now('Asia/Bangkok').datetime
             rep_approval.creator_id = current_user.id
-        if form.repair_type.data != 'เร่งด่วน':
+        if form.repair_type.data == 'เร่งด่วน':
+            rep_approval.principle_approval_type = None
+            rep_approval.purpose = None
+        else:
             rep_approval.name = None
             rep_approval.position = None
+            rep_approval.book_number = None
+            rep_approval.receipt_number = None
+            rep_approval.receipt_date = None
+            rep_approval.supplier = None
+            rep_approval.loan_no = None
         db.session.add(rep_approval)
         db.session.commit()
         if rep_approval.repair_type == 'เร่งด่วน':
@@ -1003,7 +900,8 @@ def repair_approval(record_id, repair_approval_id=None):
     else:
         for er in form.errors:
             flash("{} {}".format(er, form.errors[er]), 'danger')
-    return render_template('complaint_tracker/repair_approval_form.html', form=form, record_id=record_id)
+    return render_template('complaint_tracker/repair_approval_form.html', form=form, record_id=record_id,
+                           repair_approval_id=repair_approval_id)
 
 
 @complaint_tracker.route('/admin/repair-approval/committee/add/<int:repair_approval_id>', methods=['GET', 'POST'])
@@ -1143,7 +1041,7 @@ def generate_repair_approval_pdf(repair_approval):
     if current_user.personal_info.org.name == 'หน่วยข้อมูลและสารสนเทศ':
         organization_text = "หน่วยข้อมูลและสารสนเทศ<br/>งานยุทธศาสตร์\u00A0และการบริหารพัฒนาทรัพยากร\u00A0สำนักงานคณบดี<br/>โทร 02-4414371-7 ต่อ 2320"
         organization_info = Paragraph(organization_text, style=header_right_style)
-        mhesi_no = '''<font name="SarabunBold">ที่</font>&nbsp;&nbsp;&nbsp;&nbsp;อว 78.041/'''
+        mhesi_no = '''<font name="SarabunBold">ที่</font>'''
 
         person = Table([
             [Paragraph('ลงชื่อ', center_style), Paragraph('ผู้ขออนุมัติ', center_style)],
@@ -1165,15 +1063,14 @@ def generate_repair_approval_pdf(repair_approval):
             ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ]))
     else:
-        today = date.today()
-        if today.month >= 10:
-            fiscal_year = today.year + 1
-        else:
-            fiscal_year = today.year
+        # today = date.today()
+        # if today.month >= 10:
+        #     fiscal_year = today.year + 1
+        # else:
+        #     fiscal_year = today.year
         organization_text = "หน่วยซ่อมบำรุง<br/>งานบริหารจัดการทั่วไป\u00A0สำนักงานคณบดี<br/>โทร 02-4414371-9 ต่อ 2115"
         organization_info = Paragraph(organization_text, style=header_right_style)
-        mhesi_no = f'''<font name="SarabunBold">ที่</font>&nbsp;&nbsp;&nbsp;&nbsp;AHR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/{fiscal_year}'''.format(fiscal_year=fiscal_year)
+        mhesi_no = f'''<font name="SarabunBold">ที่</font>'''
         person = Table([
             ['', ''],
             ['', ''],
@@ -1248,8 +1145,9 @@ def generate_repair_approval_pdf(repair_approval):
             'เล่มที่ {book_number} เลขที่ {receipt_number} วันที่ {receipt_date} ทั้งนี้ ข้าพเจ้าพร้อมหัวหน้าหน่วยงานได้ลงนามรับรองในใบส่ง'
             'ของหรือใบเสร็จรับเงินว่า “ได้ตรวจรับพัสดุไว้ถูกต้องครบถ้วนแล้ว”'
             .format(price=formatted_price, price_thai=price_thai, supplier=repair_approval.supplier,
-                    book_number=repair_approval.book_number, receipt_number=repair_approval.receipt_number,
-                    receipt_date=receipt_date))
+                    book_number=repair_approval.book_number if repair_approval.book_number else '&nbsp;&nbsp;&nbsp;&nbsp;'
+                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
+                    receipt_number=repair_approval.receipt_number, receipt_date=receipt_date))
 
         receipt = (
             '<para leftIndent=35><font name="SarabunBold">4. โดยขอเบิกจ่ายจากเงิน</font> {purchase_type} ประจำปีงบประมาณ {budget_year} </para>'
@@ -1519,6 +1417,10 @@ def generate_repair_approval_pdf(repair_approval):
 def export_repair_approval_pdf(repair_approval_id):
     repair_approval = ComplaintRepairApproval.query.get(repair_approval_id)
     buffer = generate_repair_approval_pdf(repair_approval)
+    if not repair_approval.is_print:
+        repair_approval.is_print = True
+        db.session.add(repair_approval)
+        db.session.commit()
     return send_file(buffer, download_name='Repair_approval_form.pdf', as_attachment=True)
 
 

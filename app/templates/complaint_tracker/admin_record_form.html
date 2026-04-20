@@ -27,27 +27,25 @@
                                 <h5 class="title is-size-4">รายละเอียดข้อมูลผู้แจ้ง</h5>
                             </div>
                             <div class="column has-text-right is-narrow">
-                                {% if record.topic.category.category == 'อาคาร สถานที่ และพัสดุ' %}
+                                {% if record.topic.category.no == 1 %}
                                     {% if record.repair_approvals %}
                                         {% for rep_approval in record.repair_approvals %}
                                             <div class="field has-addons">
                                                 <div class="control">
-                                                    <a class="button is-info is-outlined is-small is-rounded"
+                                                    <a class="button is-info is-outlined is-rounded"
                                                        @click="printRepairApproval()"
                                                     >
-                                                            <span class="icon">
-                                                                <i class="fas fa-file-pdf"></i>
-                                                            </span>
+                                                        <span class="icon"><i class="fas fa-file-pdf"></i></span>
                                                         <span>พิมพ์ใบอนุมัติหลักการซ่อม</span>
                                                     </a>
                                                 </div>
                                                 <div class="control">
-                                                    <a class="button is-warning is-outlined is-small is-rounded"
+                                                    <a class="button is-warning is-outlined is-rounded"
                                                        href="{{ url_for('comp_tracker.repair_approval', record_id=record.id,
                                                            repair_approval_id=rep_approval.id) }}"
                                                     >
                                                             <span class="icon">
-                                                                <i class="fas fa-file"></i>
+                                                                <i class="fas fa-edit"></i>
                                                             </span>
                                                         <span>แก้ไขใบอนุมัติหลักการซ่อม</span>
                                                     </a>
@@ -59,7 +57,7 @@
                                            href="{{ url_for('comp_tracker.repair_approval', record_id=record.id) }}"
                                         >
                                             <span class="icon">
-                                                <i class="fas fa-file"></i>
+                                                <i class="fas fa-file-alt"></i>
                                             </span>
                                             <span>ออกใบอนุมัติหลักการซ่อม</span>
                                         </a>
@@ -336,6 +334,31 @@
                                             {% endif %}
                                         </div>
                                     </div>
+                                    {% if record.topic.category.no == 1 %}
+                                        <div class="field" style="margin-top: .8em">
+                                            <label class="label">ใบอนุมัติหลักการซ่อม</label>
+                                            <div class="control">
+                                                {% if record.repair_approvals %}
+                                                    {% if record.get_print_of_repair_approval == True %}
+                                                        <span class="tag is-success is-light">
+                                                            <span class="icon"><i class="fas fa-check"></i></span>
+                                                            <span>ออกเอกสารแล้ว</span>
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="tag is-danger is-light">
+                                                            <span class="icon"><i class="fas fa-times"></i></span>
+                                                            <span>ยังไม่ออกเอกสาร</span>
+                                                        </span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="tag is-light">
+                                                        <span class="icon"><i class="fas fa-ban"></i></span>
+                                                        <span>ไม่มีใบอนุมัติ</span>
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                     <div class="field">
                                         <label class="label">วันที่คาดว่าจะเสร็จ</label>
                                         <div class="control">

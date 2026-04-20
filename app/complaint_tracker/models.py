@@ -47,6 +47,7 @@ complaint_record_tag_assoc = db.Table('complaint_record_tag_assoc',
 class ComplaintCategory(db.Model):
     __tablename__ = 'complaint_categories'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    no = db.Column('no', db.Integer())
     category = db.Column('category', db.String(255), nullable=False)
 
     def __str__(self):
@@ -164,6 +165,12 @@ class ComplaintRecord(db.Model):
     created_at = db.Column('created_at', db.DateTime(timezone=True), server_default=func.now())
     closed_at = db.Column('closed_at', db.DateTime(timezone=True))
     tags = db.relationship(ComplaintTag, secondary=complaint_record_tag_assoc, backref=db.backref('records'))
+    cost_center_id = db.Column('cost_center_id', db.ForeignKey('cost_centers.id'))
+    cost_center = db.relationship(CostCenter, backref=db.backref('complaints'))
+    io_code_id = db.Column('io_code_id', db.ForeignKey('iocodes.id'))
+    io_code = db.relationship(IOCode, backref=db.backref('complaints'))
+    product_code_id = db.Column('product_code_id', db.ForeignKey('product_codes.id'))
+    product_code = db.relationship(ProductCode, backref=db.backref('complaints'))
     room_id = db.Column('room_id', db.ForeignKey('scheduler_room_resources.id'))
     room = db.relationship(RoomResource, foreign_keys=[room_id], backref=db.backref('complaints'))
     procurement_location_id = db.Column('procurement_location_id', db.ForeignKey('scheduler_room_resources.id'))
@@ -214,6 +221,17 @@ class ComplaintRecord(db.Model):
         if self.status and self.status.code == status:
                 return self
         return None
+
+    @property
+    def get_print_of_repair_approval(self):
+        if self.repair_approvals:
+            for repair_approval in self.repair_approvals:
+                if repair_approval.is_print:
+                    return True
+                else:
+                    return False
+        else:
+            return False
 
     def to_dict(self):
         return {
@@ -341,8 +359,8 @@ class ComplaintRepairApproval(db.Model):
     item = db.Column('item', db.String(), info={'label': 'รายการ/ครุภัณฑ์'})
     reason = db.Column('reason', db.Text())
     detail = db.Column('detail', db.Text())
-    purpose = db.Column('purpose', db.Text())
-    price = db.Column('price', db.Float())
+    purpose = db.Column('purpose', db.String())
+    price = db.Column('price', db.Numeric())
     supplier = db.Column('supplier', db.String())
     book_number = db.Column('book_number', db.String(), info={'label': 'เล่มที่'})
     receipt_number = db.Column('receipt_number', db.String(), info={'label': 'เลขที่'})
@@ -361,6 +379,7 @@ class ComplaintRepairApproval(db.Model):
     product_code = db.relationship(ProductCode, backref=db.backref('repair_approvals'))
     remark = db.Column('remark', db.Text())
     loan_no = db.Column('loan_no', db.String(), info={'label': 'เลขที่ใบยืม'})
+    is_print = db.Column('is_print', db.Boolean(), default=False)
     created_at = db.Column('created_at', db.DateTime(timezone=True), info={'label': 'วันที่'})
     updated_at = db.Column('updated_at', db.DateTime(timezone=True))
     creator_id = db.Column('creator_id', db.ForeignKey('staff_account.id'))
