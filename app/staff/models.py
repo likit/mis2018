@@ -158,7 +158,8 @@ class StaffAccount(db.Model):
         return True
 
     def is_active(self):
-        return True
+        _active = not self.is_retired and self.personal_info.resignation_date is None
+        return _active
 
     def is_anonymous(self):
         return False
