@@ -154,12 +154,15 @@ class StaffAccount(db.Model):
             return False
         return check_password_hash(self.__password_hash, password)
 
+    @property
     def is_authenticated(self):
         return True
 
+    @property
     def is_active(self):
-        return True
+        return not self.is_retired and self.personal_info.resignation_date is None
 
+    @property
     def is_anonymous(self):
         return False
 

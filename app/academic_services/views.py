@@ -22,7 +22,7 @@ from sqlalchemy.orm import make_transient
 from linebot.exceptions import LineBotApiError
 from linebot.models import TextSendMessage
 from app.auth.views import line_bot_api
-from app.main import app, get_credential, json_keyfile
+from app.main import app, get_credential
 from app.academic_services import academic_services
 from app.academic_services.forms import *
 from app.academic_services.models import *
@@ -1217,7 +1217,7 @@ def get_request_form():
     sub_lab = ServiceSubLab.query.filter_by(code=code).first()
     sheetid = '1EHp31acE3N1NP5gjKgY-9uBajL1FkQe7CCrAu-TKep4'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet(sub_lab.sheet)
     df = pandas.DataFrame(sheet.get_all_records())
@@ -1248,7 +1248,7 @@ def submit_request(request_id=None):
         request_no = ServiceNumberID.get_number('RQ', db,
                                                 lab=sub_lab.lab.code if sub_lab and sub_lab.lab.code == 'protein' else code)
     sheetid = '1EHp31acE3N1NP5gjKgY-9uBajL1FkQe7CCrAu-TKep4'
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet(sub_lab.sheet)
     df = pandas.DataFrame(sheet.get_all_records())
@@ -5738,7 +5738,7 @@ def edit_request_form():
     service_request = ServiceRequest.query.get(request_id)
     sheetid = '1EHp31acE3N1NP5gjKgY-9uBajL1FkQe7CCrAu-TKep4'
     print('Authorizing with Google..')
-    gc = get_credential(json_keyfile)
+    gc = get_credential()
     wks = gc.open_by_key(sheetid)
     sheet = wks.worksheet(service_request.sub_lab.sheet)
     df = pandas.DataFrame(sheet.get_all_records())

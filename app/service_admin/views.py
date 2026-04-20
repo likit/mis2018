@@ -29,7 +29,7 @@ from flask import render_template, flash, redirect, url_for, request, session, m
 from flask_login import current_user, login_required, login_user
 from sqlalchemy import or_, update, and_
 from app.service_admin.forms import *
-from app.main import app, get_credential, json_keyfile
+from app.main import app, get_credential
 from app.main import mail
 from flask_mail import Message
 from reportlab.lib import colors
@@ -6097,7 +6097,7 @@ def generate_bacteria_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6183,7 +6183,7 @@ def generate_virus_disinfection_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6275,7 +6275,7 @@ def generate_virus_air_disinfection_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6366,7 +6366,7 @@ def generate_heavy_metal_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6452,7 +6452,7 @@ def generate_food_safety_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6547,7 +6547,7 @@ def generate_protein_identification_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6635,7 +6635,7 @@ def generate_sds_page_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6644,7 +6644,6 @@ def generate_sds_page_quotation():
         quote_prices = {}
         data = service_request.data
         form = SDSPageRequestForm(data=data)
-
         for _, row in df_price.iterrows():
             if row['field_group'] not in quote_column_names:
                 quote_column_names[row['field_group']] = set()
@@ -6724,7 +6723,9 @@ def generate_sds_page_quotation():
             url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
     else:
         return render_template('service_admin/quotation_created_confirmation_page.html',
-                               quotation_id=quotation.id, request_no=service_request.request_no, menu=menu)
+                               quotation_id=quotation.id,
+                               request_no=service_request.request_no,
+                               menu=menu)
 
 
 @service_admin.route('/quotation/quantitative/generate', methods=['GET', 'POST'])
@@ -6735,7 +6736,7 @@ def generate_quantitative_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6744,7 +6745,6 @@ def generate_quantitative_quotation():
         quote_prices = {}
         data = service_request.data
         form = QuantitativeRequestForm(data=data)
-
         for _, row in df_price.iterrows():
             if row['field_group'] not in quote_column_names:
                 quote_column_names[row['field_group']] = set()
@@ -6812,6 +6812,7 @@ def generate_quantitative_quotation():
         flash('ร่างใบเสนอราคาสำเร็จ กรุณาดำเนินการตรวจสอบข้อมูล', 'success')
         return redirect(
             url_for('service_admin.create_quotation_for_admin', quotation_id=quotation.id, tab='draft', menu=menu))
+
     else:
         return render_template('service_admin/quotation_created_confirmation_page.html',
                                quotation_id=quotation.id, request_no=service_request.request_no, menu=menu)
@@ -6825,7 +6826,7 @@ def generate_endotoxin_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
@@ -6908,7 +6909,7 @@ def generate_toxicology_quotation():
     quotation = ServiceQuotation.query.filter_by(request_id=request_id, disapproved_at=None).first()
     if not quotation:
         sheet_price_id = '1hX0WT27oRlGnQm997EV1yasxlRoBSnhw3xit1OljQ5g'
-        gc = get_credential(json_keyfile)
+        gc = get_credential()
         wksp = gc.open_by_key(sheet_price_id)
         sheet_price = wksp.worksheet(service_request.sub_lab.code)
         df_price = pandas.DataFrame(sheet_price.get_all_records())
