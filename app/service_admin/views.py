@@ -1438,36 +1438,39 @@ def remove_virus_coat_condition_form():
 
 @service_admin.route('/request/virus_liquid_organism_form_entry/add', methods=['POST'])
 def add_virus_liquid_organism_form_entry():
-    index = request.args.get("index", type=int)
+    resp = ""
+    field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
-    form.liquid_condition_field[index].liquid_organism_fields.append_entry()
-    item_form = form.liquid_condition_field[index].liquid_organism_fields[-1]
-    template = """
-        <tr>
-            <td style="border: none">
-                <div class="select">{}</div>
-            </td>
-            <td style="border: none">{}</td>
-            <td style="border: none">{}</td>
-            <td style="border: none">
-                <a class="button is-danger is-outlined"
-                    hx-delete="{}" 
-                    hx-target="closest tr"
-                    hx-swap="outerHTML"
-                >
-                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                </a>
-            </td>
-        </tr>
-    """
-    resp = template.format(item_form.liquid_organism(),
-                           item_form.liquid_ratio(class_='input'),
-                           item_form.liquid_time_duration(class_='input', required=True,
-                                                          oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                          oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_liquid_organism_form_entry', index=index,
-                                   name=item_form.name)
-                           )
+    for entry in form.liquid_condition_field:
+        if entry.name == field_name:
+            entry.liquid_organism_fields.append_entry()
+            item_form = entry.liquid_organism_fields[-1]
+            template = """
+                <tr>
+                    <td style="border: none">
+                        <div class="select">{}</div>
+                    </td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">
+                        <a class="button is-danger is-outlined"
+                            hx-delete="{}" 
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                        >
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+            """
+            resp = template.format(item_form.liquid_organism(),
+                                   item_form.liquid_ratio(class_='input'),
+                                   item_form.liquid_time_duration(class_='input', required=True,
+                                                                  oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                                  oninput="this.setCustomValidity('')"),
+                                   url_for('service_admin.remove_virus_liquid_organism_form_entry', index=index,
+                                           name=item_form.name)
+                                   )
     resp = make_response(resp)
     return resp
 
@@ -1490,44 +1493,47 @@ def remove_virus_liquid_organism_form_entry():
 
 @service_admin.route('/request/virus_spray_organism_form_entry/add', methods=['POST'])
 def add_virus_spray_organism_form_entry():
-    index = request.args.get("index", type=int)
+    resp = ""
+    field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
-    form.spray_condition_field[index].spray_organism_fields.append_entry()
-    item_form = form.spray_condition_field[index].spray_organism_fields[-1]
-    template = """
-        <tr>
-            <td style="border: none">
-                <div class="select">{}</div>
-            </td>
-            <td style="border: none">{}</td>
-            <td style="border: none">{}</td>
-            <td style="border: none">{}</td>
-            <td style="border: none">{}</td>
-            <td style="border: none">
-                <a class="button is-danger is-outlined"
-                    hx-delete="{}" 
-                    hx-target="closest tr"
-                    hx-swap="outerHTML"
-                >
-                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                </a>
-            </td>
-        </tr>
-    """
-    resp = template.format(item_form.spray_organism(),
-                           item_form.spray_ratio(class_='input'),
-                           item_form.spray_distance(class_='input', required=True,
-                                                    oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                    oninput="this.setCustomValidity('')"),
-                           item_form.spray_of_time(class_='input', required=True,
-                                                   oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                   oninput="this.setCustomValidity('')"),
-                           item_form.spray_time_duration(class_='input', required=True,
-                                                         oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                         oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_spray_organism_form_entry', index=index,
-                                   name=item_form.name)
-                           )
+    for entry in form.spray_condition_field:
+        if entry.name == field_name:
+            entry.spray_organism_fields.append_entry()
+            item_form = entry.spray_organism_fields[-1]
+            template = """
+                <tr>
+                    <td style="border: none">
+                        <div class="select">{}</div>
+                    </td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">
+                        <a class="button is-danger is-outlined"
+                            hx-delete="{}" 
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                        >
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+            """
+            resp = template.format(item_form.spray_organism(),
+                                   item_form.spray_ratio(class_='input'),
+                                   item_form.spray_distance(class_='input', required=True,
+                                                            oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                            oninput="this.setCustomValidity('')"),
+                                   item_form.spray_of_time(class_='input', required=True,
+                                                           oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                           oninput="this.setCustomValidity('')"),
+                                   item_form.spray_time_duration(class_='input', required=True,
+                                                                 oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                                 oninput="this.setCustomValidity('')"),
+                                   url_for('service_admin.remove_virus_spray_organism_form_entry', index=index,
+                                           name=item_form.name)
+                                   )
     resp = make_response(resp)
     return resp
 
@@ -1550,34 +1556,37 @@ def remove_virus_spray_organism_form_entry():
 
 @service_admin.route('/request/virus_coat_organism_form_entry/add', methods=['POST'])
 def add_virus_coat_organism_form_entry():
-    index = request.args.get("index", type=int)
+    resp = ""
+    field_name = request.args.get('name')
     form = VirusDisinfectionRequestForm()
-    form.coat_condition_field[index].coat_organism_fields.append_entry()
-    item_form = form.coat_condition_field[index].coat_organism_fields[-1]
-    template = """
-        <tr>
-            <td style="border: none">
-                <div class="select">{}</div>
-            </td>
-            <td style="border: none">{}</td>
-            <td style="border: none">
-                <a class="button is-danger is-outlined"
-                    hx-delete="{}" 
-                    hx-target="closest tr"
-                    hx-swap="outerHTML"
-                >
-                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                </a>
-            </td>
-        </tr>
-    """
-    resp = template.format(item_form.coat_organism(),
-                           item_form.coat_time_duration(class_='input', required=True,
-                                                        oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                        oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_coat_organism_form_entry', index=index,
-                                   name=item_form.name)
-                           )
+    for entry in form.coat_condition_field:
+        if entry.name == field_name:
+            entry.coat_organism_fields.append_entry()
+            item_form = entry.coat_organism_fields[-1]
+            template = """
+                <tr>
+                    <td style="border: none">
+                        <div class="select">{}</div>
+                    </td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">
+                        <a class="button is-danger is-outlined"
+                            hx-delete="{}" 
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                        >
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+            """
+            resp = template.format(item_form.coat_organism(),
+                                   item_form.coat_time_duration(class_='input', required=True,
+                                                                oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                                oninput="this.setCustomValidity('')"),
+                                   url_for('service_admin.remove_virus_coat_organism_form_entry', index=index,
+                                           name=item_form.name)
+                                   )
     resp = make_response(resp)
     return resp
 
@@ -1666,34 +1675,37 @@ def remove_virus_surface_disinfection_condition_form():
 
 @service_admin.route('/request/virus_surface_disinfection_organism_form_entry/add', methods=['POST'])
 def add_virus_surface_disinfection_organism_form_entry():
-    index = request.args.get("index", type=int)
+    resp = ""
+    field_name = request.args.get('name')
     form = VirusAirDisinfectionRequestForm()
-    form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry()
-    item_form = form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields[-1]
-    template = """
-        <tr>
-            <td style="border: none">
-                <div class="select">{}</div>
-            </td>
-            <td style="border: none">{}</td>
-            <td style="border: none">
-                <a class="button is-danger is-outlined"
-                    hx-delete="{}" 
-                    hx-target="closest tr"
-                    hx-swap="outerHTML"
-                >
-                    <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                </a>
-            </td>
-        </tr>
-    """
-    resp = template.format(item_form.surface_disinfection_organism(),
-                           item_form.surface_disinfection_period_test(class_='input', required=True,
-                                                                      oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
-                                                                      oninput="this.setCustomValidity('')"),
-                           url_for('service_admin.remove_virus_surface_disinfection_organism_form_entry',
-                                   index=index, name=item_form.name)
-                           )
+    for entry in form.surface_disinfection_condition_field:
+        if entry.name == field_name:
+            entry.surface_disinfection_organism_fields.append_entry()
+            item_form = entry.surface_disinfection_organism_fields[-1]
+            template = """
+                <tr>
+                    <td style="border: none">
+                        <div class="select">{}</div>
+                    </td>
+                    <td style="border: none">{}</td>
+                    <td style="border: none">
+                        <a class="button is-danger is-outlined"
+                            hx-delete="{}" 
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                        >
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+            """
+            resp = template.format(item_form.surface_disinfection_organism(),
+                                   item_form.surface_disinfection_period_test(class_='input', required=True,
+                                                                              oninvalid="this.setCustomValidity('กรุณากรอกข้อมูล')",
+                                                                              oninput="this.setCustomValidity('')"),
+                                   url_for('service_admin.remove_virus_surface_disinfection_organism_form_entry',
+                                           index=index, name=item_form.name)
+                                   )
     resp = make_response(resp)
     return resp
 
