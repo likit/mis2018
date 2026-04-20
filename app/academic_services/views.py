@@ -1538,6 +1538,51 @@ def get_virus_disinfection_condition_form():
                            index=index, fields=fields, product_type=product_type)
 
 
+@academic_services.route('/request/virus_liquid_condition_form/remove', methods=['DELETE'])
+def remove_virus_liquid_condition_form():
+    field_name = request.args.get('name')
+    form = VirusDisinfectionRequestForm()
+    temp_entries = []
+    for entry in form.liquid_condition_field:
+        if entry.name != field_name:
+            temp_entries.append(entry)
+    while len(form.liquid_condition_field) > 0:
+        form.liquid_condition_field.pop_entry()
+    for entry in temp_entries:
+        form.liquid_condition_field.append_entry(entry)
+    return ""
+
+
+@academic_services.route('/request/virus_spray_condition_form/remove', methods=['DELETE'])
+def remove_virus_spray_condition_form():
+    field_name = request.args.get('name')
+    form = VirusDisinfectionRequestForm()
+    temp_entries = []
+    for entry in form.spray_condition_field:
+        if entry.name != field_name:
+            temp_entries.append(entry)
+    while len(form.spray_condition_field) > 0:
+        form.spray_condition_field.pop_entry()
+    for entry in temp_entries:
+        form.spray_condition_field.append_entry(entry)
+    return ""
+
+
+@academic_services.route('/request/virus_coat_condition_form/remove', methods=['DELETE'])
+def remove_virus_coat_condition_form():
+    field_name = request.args.get('name')
+    form = VirusDisinfectionRequestForm()
+    temp_entries = []
+    for entry in form.coat_condition_field:
+        if entry.name != field_name:
+            temp_entries.append(entry)
+    while len(form.coat_condition_field) > 0:
+        form.coat_condition_field.pop_entry()
+    for entry in temp_entries:
+        form.coat_condition_field.append_entry(entry)
+    return ""
+
+
 @academic_services.route('/request/virus_liquid_organism_form_entry/add', methods=['POST'])
 def add_virus_liquid_organism_form_entry():
     index = request.args.get("index", type=int)
@@ -1751,11 +1796,25 @@ def get_virus_air_disinfection_condition_form():
                            index=index, fields=fields, product_type=product_type)
 
 
+@academic_services.route('/request/virus_surface_disinfection_condition_form/remove', methods=['DELETE'])
+def remove_virus_surface_disinfection_condition_form():
+    field_name = request.args.get('name')
+    form = VirusAirDisinfectionRequestForm()
+    temp_entries = []
+    for entry in form.surface_disinfection_condition_field:
+        if entry.name != field_name:
+            temp_entries.append(entry)
+    while len(form.surface_disinfection_condition_field) > 0:
+        form.surface_disinfection_condition_field.pop_entry()
+    for entry in temp_entries:
+        form.surface_disinfection_condition_field.append_entry(entry)
+    return ""
+
+
 @academic_services.route('/request/virus_surface_disinfection_organism_form_entry/add', methods=['POST'])
 def add_virus_surface_disinfection_organism_form_entry():
     index = request.args.get("index", type=int)
     form = VirusAirDisinfectionRequestForm()
-    print('f', form.surface_disinfection_condition_field[-1])
     form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields.append_entry()
     item_form = form.surface_disinfection_condition_field[index].surface_disinfection_organism_fields[-1]
     template = """
