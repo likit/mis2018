@@ -397,16 +397,34 @@
                                                                 {% endif %}
                                                             {% endif %}
                                                         {% endfor %}
-                                                        <button id="{{ entry.name }}" type="button"
-                                                                class="button is-danger is-rounded is-small remove-subform"
-                                                                data-request-id="{{ request_id or '' }}"
-                                                                hx-post="{{ url_for('service_admin.remove_condition_form', request_id=request_id) }}"
-                                                                hx-vals='{"field": "{{ entry.name }}"}'
-                                                                hx-target="closest .subform-card"
-                                                                hx-swap="outerHTML"
-                                                        >
-                                                            ลบ
-                                                        </button>
+                                                        {% if entry_name == 'liquid_condition_field'  %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('service_admin.remove_virus_liquid_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% elif entry_name == 'spray_condition_field'  %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('service_admin.remove_virus_spray_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('service_admin.remove_virus_coat_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                             {% endfor %}
@@ -525,20 +543,6 @@
         document.addEventListener('click', function (e) {
             const productType = document.getElementById('product_type');
             productType.selectedIndex = 0;
-        });
-    </script>
-    <script>
-        document.addEventListener('click', function (e) {
-            if (e.target.classList.contains('remove-subform')) {
-                const btn = e.target;
-                const card = btn.closest('.subform-card');
-                const requestId = btn.dataset.requestId;
-
-                if (!requestId) {
-                    card.remove();
-                    e.preventDefault();
-                }
-            }
         });
     </script>
     <script>

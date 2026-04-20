@@ -145,12 +145,34 @@
                 {% endif %}
             {% endif %}
         {% endfor %}
-        <button id="{{ fields.name }}" type="button" class="button is-danger is-rounded is-small remove-subform"
-                hx-target=".subform-card"
-                hx-swap="innerHTML"
-        >
-            ลบ
-        </button>
+        {% if fields.name.startswith('liquid')  %}
+            <button type="button" class="button is-danger is-rounded is-small"
+                    hx-delete="{{ url_for('academic_services.remove_virus_liquid_condition_form',
+                    name=fields.name) }}"
+                    hx-target="closest .subform-card"
+                    hx-swap="outerHTML"
+            >
+                ลบ
+            </button>
+        {% elif fields.name.startswith('spray')  %}
+            <button type="button" class="button is-danger is-rounded is-small"
+                    hx-delete="{{ url_for('academic_services.remove_virus_spray_condition_form',
+                    name=fields.name) }}"
+                    hx-target="closest .subform-card"
+                    hx-swap="outerHTML"
+            >
+                ลบ
+            </button>
+        {% else %}
+            <button type="button" class="button is-danger is-rounded is-small"
+                    hx-delete="{{ url_for('academic_services.remove_virus_coat_condition_form',
+                    name=fields.name) }}"
+                    hx-target="closest .subform-card"
+                    hx-swap="outerHTML"
+            >
+                ลบ
+            </button>
+        {% endif %}
     </div>
 </div>
 <script>

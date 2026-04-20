@@ -239,7 +239,7 @@
                                                     {% endfor %}
                                                     <button type="button" class="button is-danger is-rounded is-small"
                                                             hx-delete="{{ url_for('academic_services.remove_virus_surface_disinfection_condition_form',
-                                                            name=fields.name) }}"
+                                                            name=entry.name) }}"
                                                             hx-target="closest .subform-card"
                                                             hx-swap="outerHTML"
                                                     >
