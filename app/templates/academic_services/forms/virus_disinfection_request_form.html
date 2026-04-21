@@ -300,7 +300,7 @@
                                                                                         {% if entry_name == 'liquid_condition_field' %}
                                                                                             <a class="button is-danger is-outlined"
                                                                                                hx-delete="{{ url_for('academic_services.remove_virus_liquid_organism_form_entry',
-                                                                                                   index=index, name=entry.name) }}"
+                                                                                               name=entry.name) }}"
                                                                                                hx-target="closest tr"
                                                                                                hx-swap="outerHTML"
                                                                                             >
@@ -309,7 +309,7 @@
                                                                                         {% elif entry_name == 'spray_condition_field' %}
                                                                                             <a class="button is-danger is-outlined"
                                                                                                hx-delete="{{ url_for('academic_services.remove_virus_spray_organism_form_entry',
-                                                                                                   index=index, name=subform.name) }}"
+                                                                                               name=entry.name) }}"
                                                                                                hx-target="closest tr"
                                                                                                hx-swap="outerHTML"
                                                                                             >
@@ -318,7 +318,7 @@
                                                                                         {% else %}
                                                                                             <a class="button is-danger is-outlined"
                                                                                                hx-delete="{{ url_for('academic_services.remove_virus_coat_organism_form_entry',
-                                                                                               index=index, name=subform.name) }}"
+                                                                                               name=entry.name) }}"
                                                                                                hx-target="closest tr"
                                                                                                hx-swap="outerHTML"
                                                                                             >
@@ -332,7 +332,8 @@
                                                                                 <td style="border: none">
                                                                                     {% if entry_name == 'liquid_condition_field' %}
                                                                                         <a class="button is-info is-outlined is-rounded"
-                                                                                           hx-post="{{ url_for('academic_services.add_virus_liquid_organism_form_entry', index=index) }}"
+                                                                                           hx-post="{{ url_for('academic_services.add_virus_liquid_organism_form_entry',
+                                                                                                   name=entry.name) }}"
                                                                                            hx-target="previous tr"
                                                                                            hx-swap="afterend"
                                                                                         >
@@ -341,7 +342,8 @@
                                                                                         </a>
                                                                                     {% elif entry_name == 'spray_condition_field' %}
                                                                                         <a class="button is-info is-outlined is-rounded"
-                                                                                           hx-post="{{ url_for('academic_services.add_virus_spray_organism_form_entry', index=index) }}"
+                                                                                           hx-post="{{ url_for('academic_services.add_virus_spray_organism_form_entry',
+                                                                                                   name=entry.name) }}"
                                                                                            hx-target="previous tr"
                                                                                            hx-swap="afterend"
                                                                                         >
@@ -350,7 +352,8 @@
                                                                                         </a>
                                                                                     {% else %}
                                                                                         <a class="button is-info is-outlined is-rounded"
-                                                                                           hx-post="{{ url_for('academic_services.add_virus_coat_organism_form_entry', index=index) }}"
+                                                                                           hx-post="{{ url_for('academic_services.add_virus_coat_organism_form_entry',
+                                                                                                   name=entry.name) }}"
                                                                                            hx-target="previous tr"
                                                                                            hx-swap="afterend"
                                                                                         >
@@ -395,16 +398,34 @@
                                                                 {% endif %}
                                                             {% endif %}
                                                         {% endfor %}
-                                                        <button id="{{ entry.name }}" type="button"
-                                                                class="button is-danger is-rounded is-small remove-subform"
-                                                                data-request-id="{{ request_id or '' }}"
-                                                                hx-post="{{ url_for('academic_services.remove_condition_form', request_id=request_id) }}"
-                                                                hx-vals='{"field": "{{ entry.name }}"}'
-                                                                hx-target="closest .subform-card"
-                                                                hx-swap="outerHTML"
-                                                        >
-                                                            ลบ
-                                                        </button>
+                                                        {% if entry_name == 'liquid_condition_field'  %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('academic_services.remove_virus_liquid_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% elif entry_name == 'spray_condition_field'  %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('academic_services.remove_virus_spray_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="button" class="button is-danger is-rounded is-small"
+                                                                    hx-delete="{{ url_for('academic_services.remove_virus_coat_condition_form',
+                                                                    name=entry.name) }}"
+                                                                    hx-target="closest .subform-card"
+                                                                    hx-swap="outerHTML"
+                                                            >
+                                                                ลบ
+                                                            </button>
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                             {% endfor %}
@@ -524,20 +545,6 @@
             const productType = document.getElementById('product_type');
             if (productType) {
                 productType.selectedIndex = 0;
-            }
-        });
-    </script>
-    <script>
-        document.addEventListener('click', function (e) {
-            if (e.target.classList.contains('remove-subform')) {
-                const btn = e.target;
-                const card = btn.closest('.subform-card');
-                const requestId = btn.dataset.requestId;
-
-                if (!requestId) {
-                    card.remove();
-                    e.preventDefault();
-                }
             }
         });
     </script>
