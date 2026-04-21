@@ -132,7 +132,7 @@ def index():
 
 
 @complaint_tracker.route('/issue/<int:topic_id>', methods=['GET', 'POST'])
-def dnew_recor(topic_id, room=None, procurement=None):
+def new_record(topic_id, room=None, procurement=None):
     topic = ComplaintTopic.query.get(topic_id)
     ComplaintRecordForm = create_record_form(record_id=None, topic_id=topic_id)
     form = ComplaintRecordForm()
