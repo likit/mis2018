@@ -1767,11 +1767,11 @@ def summarize_specimens(service_id):
                            service=service)
 
 
-@comhealth.route('/api/services/<int:service_id>/specimens-summary')
+@comhealth.route('/api/services/<int:service_id>/specimens-summary', methods=['GET', 'POST'])
 @login_required
 def get_specimens_summary_data(service_id):
-    start = request.args.get('start', 0, type=int)
-    length = request.args.get('length', 10, type=int)
+    start = request.values.get('start', 0, type=int)
+    length = request.values.get('length', 10, type=int)
     if length < 0 or length > SPECIMENS_SUMMARY_PAGE_SIZE_MAX:
         length = SPECIMENS_SUMMARY_PAGE_SIZE_MAX
 
@@ -1780,7 +1780,7 @@ def get_specimens_summary_data(service_id):
         ComHealthRecord.labno != ''
     )
     total_count = query.count()
-    search = request.args.get('search[value]')
+    search = request.values.get('search[value]')
     if search:
         query = query.filter(ComHealthRecord.labno.like('%{}%'.format(search)))
     filtered_count = query.count()
@@ -1806,7 +1806,7 @@ def get_specimens_summary_data(service_id):
     return jsonify({'data': data,
                     'recordsFiltered': filtered_count,
                     'recordsTotal': total_count,
-                    'draw': request.args.get('draw', type=int),
+                    'draw': request.values.get('draw', type=int),
                     })
 
 
