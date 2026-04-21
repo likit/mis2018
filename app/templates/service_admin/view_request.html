@@ -11,6 +11,12 @@
         .content ul {
             margin-top: 0.15em;
         }
+
+        .cut-text {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
     </style>
 {% endblock %}
 {% block page_content %}
@@ -344,7 +350,7 @@
                                             {% for result in service_request.results %}
                                                 {% for item in result.result_items %}
                                                     {% if item.final_file %}
-                                                        <a class="button is-small is-link is-light is-rounded is-fullwidth mb-2"
+                                                        <a class="button cut-text is-small is-link is-light is-rounded is-fullwidth mb-2"
                                                            href="{{ url_for('service_admin.download_file', key=item.final_file,
                                                                         download_filename=item.report_language + ' ' + '(ฉบับจริง)' + '.pdf') }}"
                                                         >
@@ -353,7 +359,7 @@
                                                                     class="fas fa-download"></i></span>
                                                         </a>
                                                     {% elif item.draft_file %}
-                                                        <a class="button is-small is-link is-light is-rounded is-fullwidth mb-2"
+                                                        <a class="button cut-text is-small is-link is-light is-rounded is-fullwidth mb-2"
                                                            href="{{ url_for('service_admin.download_file', key=item.draft_file,
                                                                                download_filename=item.report_language + ' ' + '(ฉบับร่าง)' + '.pdf') }}">
                                                             <span>{{ item.report_language + ' ' + '(ฉบับร่าง)' or 'ไม่ระบุภาษา' }}</span>

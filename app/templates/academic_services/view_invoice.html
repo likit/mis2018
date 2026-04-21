@@ -117,7 +117,7 @@
                     </div>
                 </div>
                 <div class="column is-one-quarter ">
-                    <div class="box is-full-height">
+                    <div class="box">
                         <aside class="menu">
                             <p class="menu-label">
                                 งานบริการ
@@ -196,16 +196,4 @@
 {% endblock %}
 {% block scripts %}
     {{ super() }}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.0.943/pdf.min.js"></script>
-    <script type="text/javascript">
-        var vm = new Vue({
-            el: "#invoice",
-            delimiters: ['<%', '%>'],
-            methods: {
-                printInvoice: function () {
-                    printJS({{ url_for('academic_services.export_invoice_pdf', invoice_id=invoice_id)|tojson|safe }});
-                }
-            },
-        });
-    </script>
 {% endblock %}

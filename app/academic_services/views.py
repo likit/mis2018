@@ -5278,24 +5278,23 @@ def create_address(address_id=None):
 def get_items():
     trigger = request.headers.get('hx-trigger')
     form = ServiceCustomerAddressForm()
-
-    if trigger == 'province':
+    if trigger == 'province' or trigger == 'zipcode':
         form.district.query = form.province.data.districts
         # district = form.province.data.districts[0] if form.province.data.districts else ''
         form.subdistrict.query = ''
     elif trigger == 'district' or trigger == 'subdistrict':
-        form.district.query = form.province.data.districts
-        form.subdistrict.query = form.district.data.subdistricts
+        form.district.query = form.province.data.districts if form.province.data else ''
+        form.subdistrict.query = form.district.data.subdistricts if form.district.data else ''
         if trigger == 'subdistrict':
             form.zipcode.data = form.subdistrict.data.zip_code
     else:
         form.district.query = ''
         form.subdistrict.query = ''
     template = f'''
-        {form.province(**{'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
-        {form.district(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
-        {form.subdistrict(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
-        {form.zipcode(class_='input', **{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('service_admin.get_items')})}
+        {form.province(**{'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('academic_services.get_items')})}
+        {form.district(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('academic_services.get_items')})}
+        {form.subdistrict(**{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('academic_services.get_items')})}
+        {form.zipcode(class_='input', **{'hx-swap-oob': 'true', 'hx-trigger': 'change', 'hx-target': '#province', 'hx-swap': 'outerHTML', 'hx-post': url_for('academic_services.get_items')})}
         '''
     return template
 

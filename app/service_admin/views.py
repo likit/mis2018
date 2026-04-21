@@ -5001,10 +5001,10 @@ def get_items():
         # district = form.province.data.districts[0] if form.province.data.districts else ''
         form.subdistrict.query = ''
     elif trigger == 'district' or trigger == 'subdistrict':
-        form.district.query = form.province.data.districts
-        form.subdistrict.query = form.district.data.subdistricts
+        form.district.query = form.province.data.districts if form.province.data else ''
+        form.subdistrict.query = form.district.data.subdistricts if form.district.data else ''
         if trigger == 'subdistrict':
-            form.zipcode.data = form.subdistrict.data.zip_code
+            form.zipcode.data = form.subdistrict.data.zip_code if form.subdistrict.data else ''
     else:
         form.district.query = ''
         form.subdistrict.query = ''
