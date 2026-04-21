@@ -112,103 +112,103 @@
                             </div>
                         </div>
                     </div>
-                    <div class="column is-one-quarter ">
-                        <div class="box">
-                            <aside class="menu">
-                                <p class="menu-label">
-                                    งานบริการ
-                                </p>
-                                <ul class="menu-list">
+                </div>
+                <div class="column is-one-quarter ">
+                    <div class="box">
+                        <aside class="menu">
+                            <p class="menu-label">
+                                งานบริการ
+                            </p>
+                            <ul class="menu-list">
+                                <li>
+                                    {{ quotation.request.sub_lab.sub_lab }}
+                                </li>
+                            </ul>
+                            <hr>
+                            <p class="menu-label">
+                                ข้อมูลผู้ประสานงาน
+                            </p>
+                            <ul class="menu-list">
+                                <li>
+                                    ชื่อ : {{ quotation.customer_name }}
+                                </li>
+                                <li>
+                                    เบอร์โทรศัพท์ : {{ quotation.request.customer.contact_phone_number }}
+                                </li>
+                            </ul>
+                            <hr>
+                            <p class="menu-label">
+                                ข้อมูลการสร้าง
+                            </p>
+                            <ul class="menu-list">
+                                {% if quotation.created_at %}
                                     <li>
-                                        {{ quotation.request.sub_lab.sub_lab }}
-                                    </li>
-                                </ul>
-                                <hr>
-                                <p class="menu-label">
-                                    ข้อมูลผู้ประสานงาน
-                                </p>
-                                <ul class="menu-list">
-                                    <li>
-                                        ชื่อ : {{ quotation.customer_name }}
+                                        วันที่ : {{ quotation.created_at|localdate }}
                                     </li>
                                     <li>
-                                        เบอร์โทรศัพท์ : {{ quotation.request.customer.contact_phone_number }}
+                                        โดย : {{ quotation.creator.fullname }}
                                     </li>
-                                </ul>
-                                <hr>
-                                <p class="menu-label">
-                                    ข้อมูลการสร้าง
-                                </p>
-                                <ul class="menu-list">
-                                    {% if quotation.created_at %}
-                                        <li>
-                                            วันที่ : {{ quotation.created_at|localdate }}
-                                        </li>
-                                        <li>
-                                            โดย : {{ quotation.creator.fullname }}
-                                        </li>
-                                    {% else %}
-                                        <span class="tag has-text-danger is-rounded">ยังไม่ดำเนินการสร้าง</span>
-                                    {% endif %}
-                                </ul>
-                                <hr>
-                                <p class="menu-label">
-                                    ข้อมูลการอนุมัติ
-                                </p>
-                                <ul class="menu-list">
-                                    {% if quotation.approved_at %}
-                                        <li>
-                                            วันที่ : {{ quotation.approved_at|localdate }}
-                                        </li>
-                                        <li>
-                                            โดย : {{ quotation.approver.fullname }}
-                                        </li>
-                                    {% elif quotation.sent_at and quotation.disapproved_at %}
-                                        <span class="tag is-danger is-rounded">ไม่อนุมัติใบเสนอราคา</span>
-                                    {% else %}
-                                        <span class="tag has-text-danger is-rounded">ยังไม่ดำเนินการอนุัมติ</span>
-                                    {% endif %}
-                                </ul>
-                                {% if quotation.note %}
-                                    <hr>
-                                    <p class="menu-label">
-                                        เหตุผลที่ไม่อนุมัติ
-                                    </p>
-                                    <ul class="menu-list">
-                                        <li>
-                                            {{ quotation.note }}
-                                        </li>
-                                    </ul>
-                                    {#                                <hr>#}
+                                {% else %}
+                                    <span class="tag has-text-danger is-rounded">ยังไม่ดำเนินการสร้าง</span>
                                 {% endif %}
-                                {#                            <p class="menu-label">#}
-                                {#                                สถานะ#}
-                                {#                            </p>#}
-                                {#                            <ul class="menu-list">#}
-                                {#                                <li>#}
-                                {#                                    <span class="tag {{ quotation.admin_status_color }}">#}
-                                {#                                        {{ quotation.admin_status }}#}
-                                {#                                    </span>#}
-                                {#                                </li>#}
-                                {#                            </ul>#}
-                                {#                            <hr>#}
-                                {#                            <p class="menu-label">#}
-                                {#                                การดำเนินการ#}
-                                {#                            </p>#}
-                                {#                            <ul class="menu-list">#}
-                                {#                                {% if quotation.approved_at %}#}
-                                {#                                    <li>#}
-                                {#                                        <a class="button is-info is-outlined is-rounded is-small is-fullwidth"#}
-                                {#                                           href="{{ url_for('service_admin.export_quotation_pdf', quotation_id=quotation_id) }}"#}
-                                {#                                        >#}
-                                {#                                            <span class="icon"><i class="fas fa-download"></i></span>#}
-                                {#                                            <span>ดาวน์โหลดใบเสนอราคา</span>#}
-                                {#                                        </a>#}
-                                {#                                    </li>#}
-                                {#                                {% endif %}#}
-                                {#                            </ul>#}
-                            </aside>
-                        </div>
+                            </ul>
+                            <hr>
+                            <p class="menu-label">
+                                ข้อมูลการอนุมัติ
+                            </p>
+                            <ul class="menu-list">
+                                {% if quotation.approved_at %}
+                                    <li>
+                                        วันที่ : {{ quotation.approved_at|localdate }}
+                                    </li>
+                                    <li>
+                                        โดย : {{ quotation.approver.fullname }}
+                                    </li>
+                                {% elif quotation.sent_at and quotation.disapproved_at %}
+                                    <span class="tag is-danger is-rounded">ไม่อนุมัติใบเสนอราคา</span>
+                                {% else %}
+                                    <span class="tag has-text-danger is-rounded">ยังไม่ดำเนินการอนุัมติ</span>
+                                {% endif %}
+                            </ul>
+                            {% if quotation.note %}
+                                <hr>
+                                <p class="menu-label">
+                                    เหตุผลที่ไม่อนุมัติ
+                                </p>
+                                <ul class="menu-list">
+                                    <li>
+                                        {{ quotation.note }}
+                                    </li>
+                                </ul>
+                                {#                                <hr>#}
+                            {% endif %}
+                            {#                            <p class="menu-label">#}
+                            {#                                สถานะ#}
+                            {#                            </p>#}
+                            {#                            <ul class="menu-list">#}
+                            {#                                <li>#}
+                            {#                                    <span class="tag {{ quotation.admin_status_color }}">#}
+                            {#                                        {{ quotation.admin_status }}#}
+                            {#                                    </span>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
+                            {#                            <hr>#}
+                            {#                            <p class="menu-label">#}
+                            {#                                การดำเนินการ#}
+                            {#                            </p>#}
+                            {#                            <ul class="menu-list">#}
+                            {#                                {% if quotation.approved_at %}#}
+                            {#                                    <li>#}
+                            {#                                        <a class="button is-info is-outlined is-rounded is-small is-fullwidth"#}
+                            {#                                           href="{{ url_for('service_admin.export_quotation_pdf', quotation_id=quotation_id) }}"#}
+                            {#                                        >#}
+                            {#                                            <span class="icon"><i class="fas fa-download"></i></span>#}
+                            {#                                            <span>ดาวน์โหลดใบเสนอราคา</span>#}
+                            {#                                        </a>#}
+                            {#                                    </li>#}
+                            {#                                {% endif %}#}
+                            {#                            </ul>#}
+                        </aside>
                     </div>
                 </div>
             </div>
