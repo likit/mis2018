@@ -24,6 +24,7 @@ from flask_mail import Mail
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from flask_restful import Api
+from wtforms.validators import InputRequired
 
 import os
 import re

@@ -37,6 +37,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import (SimpleDocTemplate, Table, Image,
                                 Spacer, Paragraph, TableStyle, PageBreak, KeepTogether)
 from sqlalchemy import or_, case
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql import and_
 
@@ -57,6 +58,8 @@ GOOGLE_SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile',
     'openid',
 ]
+
+SPECIMENS_SUMMARY_PAGE_SIZE_MAX = 100
 
 
 def _is_google_verification_enabled():
@@ -1702,27 +1705,39 @@ def delete_service_group(service_id=None, group_id=None):
     return redirect(url_for('comhealth.edit_service', service_id=service.id))
 
 
+def _get_service_specimen_containers(service_id):
+    containers = {}
+    profile_containers = db.session.query(ComHealthContainer) \
+        .join(ComHealthTest, ComHealthTest.container_id == ComHealthContainer.id) \
+        .join(ComHealthTestItem, ComHealthTestItem.test_id == ComHealthTest.id) \
+        .join(profile_service_assoc_table,
+              profile_service_assoc_table.c.profile_id == ComHealthTestItem.profile_id) \
+        .filter(profile_service_assoc_table.c.service_id == service_id) \
+        .all()
+    group_containers = db.session.query(ComHealthContainer) \
+        .join(ComHealthTest, ComHealthTest.container_id == ComHealthContainer.id) \
+        .join(ComHealthTestItem, ComHealthTestItem.test_id == ComHealthTest.id) \
+        .join(group_service_assoc_table,
+              group_service_assoc_table.c.group_id == ComHealthTestItem.group_id) \
+        .filter(group_service_assoc_table.c.service_id == service_id) \
+        .all()
+
+    for container in profile_containers + group_containers:
+        if container:
+            containers[container.id] = container
+
+    return sorted(containers.values(), key=lambda container: container.name or '')
+
+
 @comhealth.route('/services/<int:service_id>/specimens-summary')
 @login_required
 def summarize_specimens(service_id):
-    containers = set()
     service = ComHealthService.query.get(service_id)
 
-    valid_records = ComHealthRecord.query.filter(
-        ComHealthRecord.service_id == service_id,
-        ComHealthRecord.labno != ''
-    ).all()
-
-    for record in valid_records:
-        for test_item in record.ordered_tests:
-            if test_item.test and test_item.test.container:
-                containers.add(test_item.test.container)
-
     columns = [{'data': 'labno', 'searchable': True}]
-    headers = []
-    for ct in sorted(containers, key=lambda x: x.name):
-        columns.append({'data': ct.id})
-        headers.append(ct)
+    headers = _get_service_specimen_containers(service_id)
+    for ct in headers:
+        columns.append({'data': str(ct.id)})
 
     return render_template('comhealth/specimens_checklist.html',
                            summary_date=datetime.now(tz=bangkok),
@@ -1734,25 +1749,30 @@ def summarize_specimens(service_id):
 @comhealth.route('/api/services/<int:service_id>/specimens-summary')
 @login_required
 def get_specimens_summary_data(service_id):
-    start = request.args.get('start', type=int)
-    length = request.args.get('length', type=int)
-    service = ComHealthService.query.get(service_id)
-    query = service.records.filter(ComHealthRecord.labno != '')
+    start = request.args.get('start', 0, type=int)
+    length = request.args.get('length', 10, type=int)
+    if length < 0 or length > SPECIMENS_SUMMARY_PAGE_SIZE_MAX:
+        length = SPECIMENS_SUMMARY_PAGE_SIZE_MAX
+
+    query = ComHealthRecord.query.filter(
+        ComHealthRecord.service_id == service_id,
+        ComHealthRecord.labno != ''
+    )
     total_count = query.count()
     search = request.args.get('search[value]')
     if search:
         query = query.filter(ComHealthRecord.labno.like('%{}%'.format(search)))
+    filtered_count = query.count()
 
-    containers = set()
-    for profile in service.profiles:
-        for test_item in profile.test_items:
-            containers.add(test_item.test.container)
-    for group in service.groups:
-        for test_item in group.test_items:
-            containers.add(test_item.test.container)
+    containers = _get_service_specimen_containers(service_id)
+    records = query.options(
+        selectinload(ComHealthRecord.ordered_tests)
+        .joinedload(ComHealthTestItem.test)
+        .joinedload(ComHealthTest.container)
+    ).order_by(ComHealthRecord.labno).offset(start).limit(length)
 
     data = []
-    for rec in query.order_by('labno').offset(start).limit(length):
+    for rec in records:
         if rec.labno:
             d = {'labno': rec.labno}
             for ct in containers:
@@ -1763,7 +1783,7 @@ def get_specimens_summary_data(service_id):
                     d[str(ct.id)] = None
             data.append(d)
     return jsonify({'data': data,
-                    'recordsFiltered': query.count(),
+                    'recordsFiltered': filtered_count,
                     'recordsTotal': total_count,
                     'draw': request.args.get('draw', type=int),
                     })
