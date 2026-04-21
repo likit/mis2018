@@ -60,6 +60,7 @@ GOOGLE_SCOPES = [
 ]
 
 SPECIMENS_SUMMARY_PAGE_SIZE_MAX = 100
+SERVICE_CUSTOMERS_PAGE_SIZE_MAX = 100
 
 
 def _is_google_verification_enabled():
@@ -750,7 +751,16 @@ def register_customer_to_service_org(service_id, org_id):
 @login_required
 def display_service_customers(service_id):
     service = ComHealthService.query.get(service_id)
-    return render_template('comhealth/service_customers.html', service_id=service_id, service=service)
+    first_org = db.session.query(ComHealthCustomer.org_id) \
+        .join(ComHealthRecord, ComHealthRecord.customer_id == ComHealthCustomer.id) \
+        .filter(ComHealthRecord.service_id == service_id,
+                ComHealthCustomer.org_id != None) \
+        .first()
+    walkin_org_id = first_org[0] if first_org else None
+    return render_template('comhealth/service_customers.html',
+                           service_id=service_id,
+                           service=service,
+                           walkin_org_id=walkin_org_id)
 
 
 @comhealth.route('api/services/<int:service_id>/customers')
@@ -762,21 +772,32 @@ def get_services_customers(service_id):
     col_idx = request.args.get('order[0][column]')
     direction = request.args.get('order[0][dir]')
     col_name = request.args.get('columns[{}][data]'.format(col_idx))
-    query = query.join(ComHealthCustomer, aliased=True).filter(or_(
-        ComHealthCustomer.firstname.contains(search),
-        ComHealthCustomer.lastname.contains(search),
-        ComHealthRecord.labno.contains(search)))
-    try:
-        column = getattr(ComHealthCustomer, col_name)
-    except AttributeError:
-        column = getattr(ComHealthRecord, col_name)
+    query = query.join(ComHealthCustomer, ComHealthRecord.customer_id == ComHealthCustomer.id)
+    if search:
+        query = query.filter(or_(
+            ComHealthCustomer.firstname.contains(search),
+            ComHealthCustomer.lastname.contains(search),
+            ComHealthRecord.labno.contains(search)))
+
+    order_columns = {
+        'firstname': ComHealthCustomer.firstname,
+        'lastname': ComHealthCustomer.lastname,
+        'labno': ComHealthRecord.labno,
+        'checkin_datetime': ComHealthRecord.checkin_datetime,
+    }
+    column = order_columns.get(col_name, ComHealthCustomer.firstname)
     if direction == 'desc':
         column = column.desc()
     query = query.order_by(column)
-    start = request.args.get('start', type=int)
-    length = request.args.get('length', type=int)
+    start = request.args.get('start', 0, type=int)
+    length = request.args.get('length', 10, type=int)
+    if length < 0 or length > SERVICE_CUSTOMERS_PAGE_SIZE_MAX:
+        length = SERVICE_CUSTOMERS_PAGE_SIZE_MAX
     total_filtered = query.count()
-    query = query.offset(start).limit(length)
+    query = query.options(
+        selectinload(ComHealthRecord.customer),
+        selectinload(ComHealthRecord.finance_contact)
+    ).offset(start).limit(length)
     data = []
     for item in query:
         item_data = item.to_dict()
