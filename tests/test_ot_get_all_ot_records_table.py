@@ -1105,6 +1105,89 @@ def test_get_all_ot_records_table_does_not_reuse_future_open_checkin_for_past_sh
     assert row["payment"] is None
 
 
+def test_get_all_ot_records_table_does_not_use_previous_day_pair_for_daytime_shift(ot_views):
+    shift_record = _make_record(
+        staff_id=812,
+        fullname="Previous Day Pair Staff",
+        sap_id="SAP-812",
+        shift_start=datetime(2026, 8, 5, 5, 30),
+        shift_end=datetime(2026, 8, 5, 8, 30),
+        rate=750.0,
+        per_period=True,
+    )
+    shifts = [
+        SimpleNamespace(
+            datetime=SimpleNamespace(lower=shift_record.shift.datetime.lower, upper=shift_record.shift.datetime.upper),
+            records=[shift_record],
+        )
+    ]
+    logins = [
+        _make_login(812, 101, _bangkok_dt(2026, 8, 4, 8, 56), None),
+        _make_login(812, 102, _bangkok_dt(2026, 8, 5, 13, 34), None),
+        _make_login(812, 103, _bangkok_dt(2026, 8, 5, 18, 49), None),
+    ]
+
+    ot_views.StaffWorkLogin = SimpleNamespace(
+        query=FakeLoginQuery(logins),
+        start_datetime=DummyField(),
+    )
+    ot_views.OtShift = SimpleNamespace(
+        query=FakeShiftQuery(shifts),
+        datetime=DummyField(),
+        timeslot=DummyField(),
+    )
+
+    app = Flask("test")
+    with app.test_request_context(
+        "/app/api?start=2026-08-05T00:00:00%2B07:00&end=2026-08-05T23:59:59%2B07:00"
+    ):
+        response = _call_unwrapped_view(ot_views.get_all_ot_records_table)(announcement_id=7)
+
+    row = response.get_json()["data"][0]
+    assert row["checkins"] == "2026-08-05T13:34:00+07:00"
+    assert row["checkouts"] == "2026-08-05T18:49:00+07:00"
+    assert row["payment"] == _expected_pay(180, 750.0)
+
+
+def test_manual_ot_checkin_stores_creator_id(ot_views, monkeypatch):
+    created_records = []
+
+    class FakeStaffWorkLogin:
+        def __init__(self):
+            self.staff_id = None
+            self.start_datetime = None
+            self.creator_id = None
+            self.note = None
+
+    class FakeSession:
+        def add(self, record):
+            created_records.append(record)
+
+        def commit(self):
+            pass
+
+    monkeypatch.setattr(ot_views, "StaffWorkLogin", FakeStaffWorkLogin)
+    monkeypatch.setattr(ot_views, "current_user", SimpleNamespace(id=321))
+    monkeypatch.setattr(ot_views, "db", SimpleNamespace(session=FakeSession()))
+
+    app = Flask("test")
+    with app.test_request_context(
+        "/app/api/staff/812/checkin-records",
+        method="POST",
+        data={
+            "checkin-datetime": "05/08/2026 05:21:00",
+            "note": "manual correction",
+        },
+    ):
+        response = _call_unwrapped_view(ot_views.add_checkin_record)(staff_id=812)
+
+    assert response.status_code == 200
+    assert len(created_records) == 1
+    assert created_records[0].staff_id == 812
+    assert created_records[0].creator_id == 321
+    assert created_records[0].note == "manual correction"
+
+
 def test_get_all_ot_records_table_formats_download_rows_as_strings(ot_views, monkeypatch):
     captured = {}
 

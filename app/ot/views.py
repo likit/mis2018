@@ -2608,6 +2608,17 @@ def get_all_ot_records_table(announcement_id=None, staff_id=None):
                             continue
                     elif _pair.start.date() != shift_start.date() and _pair.end.date() != shift_end.date():
                         continue
+                    # A cross-day pair that starts before the shift date can only
+                    # belong to a shift that itself starts at midnight.  Without
+                    # this guard, two unrelated daytime scans such as Aug 4 08:56
+                    # and Aug 5 13:34 are treated as the check-in/out for an Aug 5
+                    # morning shift.
+                    if (
+                        _pair.end
+                        and _pair.start.date() != shift_start.date()
+                        and shift_start.time() != time(0, 0)
+                    ):
+                        continue
 
                     # Treat midnight as a real check-in only for midnight-starting shifts.
                     if _pair.start.time() == time(0, 0) and shift_start.time() != _pair.start.time():
@@ -2810,6 +2821,7 @@ def add_checkin_record(staff_id=None, checkin_id=None):
             for checkin in query:
                 rec = {
                     'staff': staff.fullname,
+                    'creator': checkin.creator.fullname if checkin.creator else '-',
                     'note': checkin.note,
                     'checkin': checkin.start_datetime.isoformat() if download == 'no' else checkin.start_datetime.strftime(
                         '%Y-%m-%d %H:%M:%S'),
@@ -2829,6 +2841,7 @@ def add_checkin_record(staff_id=None, checkin_id=None):
         new_checkin_record = StaffWorkLogin()
         new_checkin_record.staff_id = staff_id
         new_checkin_record.start_datetime = checkin_datetime
+        new_checkin_record.creator_id = current_user.id
         note = form.get('note')
         new_checkin_record.note = note or 'แก้ไข/เพิ่มเติมโดย admin'
         db.session.add(new_checkin_record)
