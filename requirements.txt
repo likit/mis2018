@@ -117,7 +117,7 @@ uritools==4.0.1
 urllib3==2.8.0
 xlsxwriter==3.2.9
 webencodings==0.5.1
-Werkzeug==3.1.6
+Werkzeug==3.1.9
 wrapt==1.14.0
 WTForms==2.3.3
 WTForms-Alchemy==0.18.0
